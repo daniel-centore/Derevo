@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useAsync } from 'react-async';
 import { head } from 'lodash';
 import { Point, TreeCommit, TreeData } from '../types/types';

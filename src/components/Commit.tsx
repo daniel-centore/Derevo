@@ -8,6 +8,10 @@ export const Commit = ({ meta, loc }: { meta: CommitMetadata; loc: Point }) => {
         cy={loc.y}
         r="8"
         fill={meta.active ? 'cyan' : 'grey'}
+        cursor="pointer"
+        onClick={() => {
+          // TODO: Checkout
+        }}
       />
       {/* TODO: Max width based on something else? */}
       <foreignObject x={loc.x + 20} y={loc.y - 15} width="1000" height="50">

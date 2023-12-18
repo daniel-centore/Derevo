@@ -26,10 +26,11 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.handle('extractGitTree', async (event, arg) => {
+ipcMain.handle('extractGitTree', async (event, data) => {
   const result = await extractGitTree();
-  // console.log('Responding...');
-  return result;
+  console.log('Responding...', {mainWindow: !!mainWindow});
+  // return result;
+  mainWindow?.webContents.send('extractGitTree', result);
 });
 
 if (process.env.NODE_ENV === 'production') {
