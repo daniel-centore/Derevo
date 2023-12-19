@@ -5,11 +5,11 @@ import { ipcRenderer } from 'electron';
 import { useEffect, useState } from 'react';
 import { Tree } from '../components/Tree';
 import { TreeData } from '../types/types';
-import { useIpcListener } from '../hooks/use-ipc-listener';
 
 // https://github.com/isomorphic-git/isomorphic-git?tab=readme-ov-file
 // https://superlog.dev/docs/essentials
 // https://xtermjs.org/
+// TODO: Terminal - https://stackoverflow.com/questions/63390143/how-do-i-connect-xterm-jsin-electron-to-a-real-working-command-prompt
 const Hello = () => {
   const [treeData, setTreeData] = useState<TreeData>();
   // window.electron.api.on('extractGitTree', (_, result) => {
@@ -32,7 +32,11 @@ const Hello = () => {
       // setTreeData({test123: 45});
     });
     return () => unsubscribe();
-  }, [setTreeData]);
+  }, []);
+  useEffect(() => {
+    // Load on start
+    window.electron.api.invoke('extractGitTree');
+  }, []);
   return (
     <div>
       <h1>Derevo</h1>

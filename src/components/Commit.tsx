@@ -1,16 +1,38 @@
 import { CommitMetadata, Point } from '../types/types';
 
-export const Commit = ({ meta, loc }: { meta: CommitMetadata; loc: Point }) => {
+export const Commit = ({
+  meta,
+  loc,
+  isRebase,
+  rebase,
+  setRebase,
+}: {
+  meta: CommitMetadata;
+  loc: Point;
+  isRebase: boolean;
+  rebase: string | undefined;
+  setRebase: (oid: string | undefined) => void;
+}) => {
+  let circleColor = 'grey';
+  if (meta.active) {
+    circleColor = 'cyan';
+  }
+  if (isRebase) {
+    circleColor = 'red';
+  }
   return (
     <>
       <circle
         cx={loc.x}
         cy={loc.y}
         r="8"
-        fill={meta.active ? 'cyan' : 'grey'}
-        cursor="pointer"
+        fill={circleColor}
+        cursor={rebase ? 'default' : 'pointer'}
         onClick={() => {
-          // TODO: Checkout
+          if (rebase) {
+            return;
+          }
+          window.electron.api.invoke('checkout', meta.oid);
         }}
       />
       {/* TODO: Max width based on something else? */}
@@ -31,7 +53,7 @@ export const Commit = ({ meta, loc }: { meta: CommitMetadata; loc: Point }) => {
               {meta.branches.length > 0 && `[${meta.branches.join(', ')}]`}
             </span>{' '}
             {meta.title}
-            {meta.active && !meta.mainBranch && (
+            {meta.active && !meta.mainBranch && !rebase && (
               <button
                 type="button"
                 style={{
@@ -41,14 +63,44 @@ export const Commit = ({ meta, loc }: { meta: CommitMetadata; loc: Point }) => {
                 Uncommit
               </button>
             )}
-            {!meta.mainBranch && (
+            {meta.active && !meta.mainBranch && !rebase && (
               <button
                 type="button"
                 style={{
                   marginLeft: '15px',
                 }}
+                onClick={() => {
+                  setRebase(meta.oid);
+                }}
               >
-                Rebase
+                Rebase ⮕
+              </button>
+            )}
+            {rebase === meta.oid && (
+              <button
+                type="button"
+                style={{
+                  marginLeft: '15px',
+                }}
+                onClick={() => {
+                  setRebase(undefined);
+                }}
+              >
+                Cancel Rebase
+              </button>
+            )}
+            {rebase && !isRebase && (
+              <button
+                type="button"
+                style={{
+                  marginLeft: '15px',
+                }}
+                onClick={() => {
+                  // TODO
+                  // setRebase(undefined);
+                }}
+              >
+                ⬅ Rebase
               </button>
             )}
           </div>

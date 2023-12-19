@@ -16,6 +16,7 @@ export type TreeCommit = {
 
 export type TreeData = {
   rootCommit: TreeCommit | null;
+  commitMap: Record<string, TreeCommit>;
 };
 
 export type Point = {

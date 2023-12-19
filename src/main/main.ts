@@ -12,6 +12,11 @@ import path from 'path';
 import electron, { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import os from 'os';
+// import pty from 'node-pty';
+// import pty from '@homebridge/node-pty-prebuilt-multiarch';
+import { exec } from 'child_process';
+import util from 'node:util';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import { extractGitTree } from './gitlib/git-tree';
@@ -28,8 +33,40 @@ let mainWindow: BrowserWindow | null = null;
 
 ipcMain.handle('extractGitTree', async (event, data) => {
   const result = await extractGitTree();
-  console.log('Responding...', {mainWindow: !!mainWindow});
+  console.log('Responding...', { mainWindow: !!mainWindow });
   // return result;
+  mainWindow?.webContents.send('extractGitTree', result);
+});
+
+ipcMain.handle('checkout', async (event, data) => {
+  console.log('Checkout', { data });
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
+  const execPromise = util.promisify(exec);
+  await execPromise(`git checkout ${data[0]}`, { cwd: dir });
+  // await git.checkout({
+  //   fs,
+  //   dir,
+  //   ref: data,
+  // });
+  // const platformShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+  // const ptyProcess = pty.spawn(platformShell, [], {
+  //   name: 'xterm-color',
+  //   cols: 80,
+  //   rows: 24,
+  //   cwd: process.env.HOME,
+  //   env: process.env,
+  // });
+  // // ptyProcess.
+
+  // ptyProcess.onData((ptyData) => {
+  //    mainWindow?.webContents.send('terminal-incData', ptyData);
+  // });
+
+  // ipcMain.on('terminal-into', (_event, ptyData) => {
+  //   ptyProcess.write(ptyData);
+  // });
+
+  const result = await extractGitTree();
   mainWindow?.webContents.send('extractGitTree', result);
 });
 

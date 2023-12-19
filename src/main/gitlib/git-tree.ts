@@ -46,13 +46,13 @@ export const extractGitTree = async (): Promise<TreeData> => {
   let previousCommit: TreeCommit | null = null;
   for (let i = 0; i < mainBranchCommits.length; i++) {
     const rawCommit = mainBranchCommits[i];
-    console.log(
-      'Raw Commit Main',
-      util.inspect(
-        { rawCommit },
-        { showHidden: false, depth: null, colors: true },
-      ),
-    );
+    // console.log(
+    //   'Raw Commit Main',
+    //   util.inspect(
+    //     { rawCommit },
+    //     { showHidden: false, depth: null, colors: true },
+    //   ),
+    // );
     const commit: TreeCommit = {
       metadata: rawCommitToMeta({
         rawCommit,
@@ -132,5 +132,6 @@ export const extractGitTree = async (): Promise<TreeData> => {
   // );
   return {
     rootCommit,
+    commitMap,
   };
 };

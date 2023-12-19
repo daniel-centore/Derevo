@@ -17,7 +17,7 @@ const electronHandler = {
       ipcRenderer.on(channel, subscription);
 
       return () => {
-        console.log('Remove listener');
+        // console.log('Remove listener');
         ipcRenderer.removeListener(channel, subscription);
       };
     },
