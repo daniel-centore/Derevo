@@ -11,7 +11,7 @@ export const TerminalComponent = () => {
     }
     const terminal = new Terminal({
       rows: 10,
-      cols: 80,
+      cols: 100,
     });
 
     const unsubscribe = window.electron.api.on('terminal-out', (data) => {

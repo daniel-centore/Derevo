@@ -5,7 +5,6 @@ import './App.css';
 import { TerminalComponent } from '../components/TerminalComponent';
 
 const Main = () => {
-
   useEffect(() => {
     // Load on start
     window.electron.api.invoke('extractGitTree');

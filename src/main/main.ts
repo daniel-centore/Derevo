@@ -15,9 +15,12 @@ import log from 'electron-log';
 import os from 'os';
 // import { shellPath } from 'shell-path';
 import * as pty from 'node-pty';
+import { exec } from 'child_process';
+import util from 'node:util';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
+import { resolveHtmlPath, sleep } from './util';
 import { extractGitTree } from './gitlib/git-tree';
+import { TreeCommit } from '../types/types';
 
 class AppUpdater {
   constructor() {
@@ -29,21 +32,27 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.handle('extractGitTree', async (event, data) => {
+const reloadGitTree = async () => {
   const result = await extractGitTree();
   console.log('Responding...', { mainWindow: !!mainWindow });
   // return result;
   mainWindow?.webContents.send('extractGitTree', result);
+}
+
+// TODO: rename
+ipcMain.handle('extractGitTree', async (event, data) => {
+  await reloadGitTree();
 });
 
 let ptyProcess: pty.IPty | null = null;
 
-const spawn = async (cmd: string, cwd: string) => {
+const spawn = async (cmd: string, cwd: string): Promise<number> => {
   if (ptyProcess) {
-    console.log('Process already running; queuing the cmd');
-    ptyProcess.onExit(() => {
-      spawn(cmd, cwd);
-    });
+    console.log('Error: Process already running!');
+    // ptyProcess.onExit(() => {
+    //   spawn(cmd, cwd);
+    // });
+    return -1;
   }
 
   // const shPath = await shellPath();
@@ -60,34 +69,93 @@ const spawn = async (cmd: string, cwd: string) => {
   mainWindow?.webContents.send('terminal-out', `${cmd}\r\n`);
 
   ptyProcess.onData((ptyData) => {
-    console.log({ptyData});
+    console.log({ ptyData });
     mainWindow?.webContents.send('terminal-out', ptyData);
   });
 
   const ptyProcessFinal = ptyProcess;
-  return new Promise<void>((resolve) => {
-    ptyProcessFinal.onExit(() => {
+  return new Promise<number>((resolve) => {
+    ptyProcessFinal.onExit((x) => {
       mainWindow?.webContents.send('terminal-out', '\r\n> ');
       ptyProcess = null;
-      resolve();
+      resolve(x.exitCode);
     });
   });
-
 };
 
 ipcMain.handle('terminal-in', (_event, ptyData) => {
   ptyProcess?.write(ptyData[0]);
 });
 
-ipcMain.handle('checkout', async (event, data) => {
-  console.log('Checkout', { data });
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
+// Rebase git -c core.editor=true rebase --continue
+ipcMain.handle('run-cmds', async (event, data) => {
+  console.log('run-cmds', { data });
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
 
-  await spawn(`git -c advice.detachedHead=false checkout ${data[0]}`, dir);
+  for (const cmd of data as string[]) {
+    // await spawn(`git -c advice.detachedHead=false checkout ${data[0]}`, dir);
+    // eslint-disable-next-line no-await-in-loop
+    await spawn(cmd, dir);
+
+    // eslint-disable-next-line no-await-in-loop
+    const result = await extractGitTree();
+    mainWindow?.webContents.send('extractGitTree', result);
+  }
   // await spawn('vim', dir);
+});
 
-  const result = await extractGitTree();
-  mainWindow?.webContents.send('extractGitTree', result);
+const performRebase = async ({
+  from,
+  to,
+}: {
+  from: TreeCommit;
+  to: string;
+}) => {
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+  // TODO: Validation
+  const fromBranch = from.metadata.branches[0];
+  const returnValue = await spawn(
+    `git rebase --onto ${to} ${fromBranch}~ ${fromBranch}`,
+    dir,
+  );
+  if (returnValue !== 0) {
+    let hasConflict = true;
+    while (hasConflict) {
+      // TODO: Do something
+      const execPromise = util.promisify(exec);
+      // eslint-disable-next-line no-await-in-loop
+      // await execPromise('git add .', { cwd: dir });
+
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await execPromise('git diff --check', { cwd: dir });
+      } catch (e) {
+        console.log('Merge in progress...');
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(500);
+        continue;
+      }
+
+      console.log('Completed!');
+      hasConflict = false;
+    }
+    // TODO: Wait for "Continue"
+    await spawn('git add .', dir);
+    await spawn('git -c core.editor=true rebase --continue', dir);
+  }
+
+  await reloadGitTree();
+
+  for (const split of from.branchSplits) {
+    // eslint-disable-next-line no-await-in-loop
+    await performRebase({ from: split, to: fromBranch });
+  }
+};
+
+ipcMain.handle('rebase', async (_, data) => {
+  const { from, to }: { from: TreeCommit; to: string } = data;
+
+  await performRebase({ from, to });
 });
 
 if (process.env.NODE_ENV === 'production') {

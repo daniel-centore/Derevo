@@ -34,13 +34,14 @@ const Line = ({
 const COMMIT_HEIGHT = 40;
 const BRANCH_EXTRA_Y_OFFSET = 15;
 const BRANCH_X_OFFSET = 30;
+const BRANCH_OFF_HEIGHT = 40;
 
 const BranchOff = ({ to, stroke }: { to: Point; stroke: string }) => {
   return (
     <path
-      d={`M${to.x} ${to.y} C ${to.x} ${to.y + 40}, ${to.x - BRANCH_X_OFFSET} ${
-        to.y
-      }, ${to.x - BRANCH_X_OFFSET} ${to.y + 50}`}
+      d={`M${to.x} ${to.y} C ${to.x} ${to.y + BRANCH_OFF_HEIGHT}, ${
+        to.x - BRANCH_X_OFFSET
+      } ${to.y}, ${to.x - BRANCH_X_OFFSET} ${to.y + 50}`}
       strokeWidth="2px"
       fill="transparent"
       stroke={stroke}
@@ -50,12 +51,14 @@ const BranchOff = ({ to, stroke }: { to: Point; stroke: string }) => {
 
 const createTreeChunk = ({
   root,
+  treeData,
   chunkLoc,
   rebase,
   setRebase,
   isRebase,
 }: {
   root: TreeCommit;
+  treeData: TreeData;
   chunkLoc: Point;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
@@ -92,6 +95,7 @@ const createTreeChunk = ({
     components.push(
       <Commit
         meta={commit.metadata}
+        treeData={treeData}
         loc={loc}
         isRebase={isRebaseTemp}
         rebase={rebase}
@@ -111,16 +115,30 @@ const createTreeChunk = ({
       return a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
     });
 
-    for (let i = 1; i < commit.branchSplits.length; i++) {
-      const split = commit.branchSplits[i];
-      const branchSplitLoc = {
+    const branchSplits: TreeCommit[] = [...commit.branchSplits];
+    let mainDescendent: TreeCommit | undefined;
+    // This if statement handles making sure that any branches off of the
+    // tip of main appear as branches, not continuations of main
+    if (
+      branchSplits.length > 0 &&
+      (!commit.metadata.mainBranch ||
+        (commit.metadata.mainBranch &&
+          head(commit.branchSplits)?.metadata.mainBranch))
+    ) {
+      mainDescendent = branchSplits.shift();
+    }
+
+    for (let i = 0; i < branchSplits.length; i++) {
+      const split = branchSplits[i];
+      const branchSplitToLoc = {
         x: chunkLoc.x + BRANCH_X_OFFSET,
         y: chunkLoc.y + yOffset - COMMIT_HEIGHT - BRANCH_EXTRA_Y_OFFSET,
       };
       const branchIsRebase = isRebaseTemp || split.metadata.oid === rebase;
       const chunk = createTreeChunk({
         root: split,
-        chunkLoc: branchSplitLoc,
+        treeData,
+        chunkLoc: branchSplitToLoc,
         rebase,
         setRebase,
         isRebase: branchIsRebase,
@@ -129,7 +147,7 @@ const createTreeChunk = ({
 
       lines.push(
         <BranchOff
-          to={branchSplitLoc}
+          to={branchSplitToLoc}
           stroke={branchIsRebase ? 'red' : 'grey'}
         />,
       );
@@ -138,7 +156,17 @@ const createTreeChunk = ({
       yOffset -= chunk.height;
     }
 
-    commit = head(commit.branchSplits) ?? null;
+    if (commit.metadata.mainBranch && !mainDescendent) {
+      // This is for the final line of main, extending through the top of the page
+      const topLocation = {
+        x: chunkLoc.x,
+        y: chunkLoc.y + yOffset - 10,
+      };
+
+      lines.push(<Line locA={loc} locB={topLocation} stroke="grey" />);
+    }
+
+    commit = mainDescendent ?? null;
     yOffset -= COMMIT_HEIGHT;
     lastLoc = loc;
   }
@@ -151,7 +179,7 @@ const createTreeChunk = ({
 };
 
 const HEIGHT_OFFSET = COMMIT_HEIGHT / 2;
-const WIDTH = 1000; // TODO: Compute max width instead
+const WIDTH = 900; // TODO: Can we do better?
 
 export const Tree = () => {
   const [treeData, setTreeData] = useState<TreeData>();
@@ -168,11 +196,18 @@ export const Tree = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (rebase && treeData && !(rebase in treeData.commitMap)) {
+      setRebase(undefined);
+    }
+  }, [rebase, treeData]);
+
   if (!treeData?.rootCommit) {
     return <p>No data</p>;
   }
   const chunk = createTreeChunk({
     root: treeData.rootCommit,
+    treeData,
     chunkLoc: { x: 20, y: 0 },
     rebase,
     setRebase,

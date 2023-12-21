@@ -1,13 +1,15 @@
-import { CommitMetadata, Point } from '../types/types';
+import { CommitMetadata, Point, TreeCommit, TreeData } from '../types/types';
 
 export const Commit = ({
   meta,
+  treeData,
   loc,
   isRebase,
   rebase,
   setRebase,
 }: {
   meta: CommitMetadata;
+  treeData: TreeData;
   loc: Point;
   isRebase: boolean;
   rebase: string | undefined;
@@ -33,7 +35,9 @@ export const Commit = ({
             return;
           }
           const ref = meta.branches[0] || meta.oid;
-          await window.electron.api.invoke('checkout', ref);
+          await window.electron.api.runCommands([
+            `git -c advice.detachedHead=false checkout ${ref}`,
+          ]);
         }}
       />
       {/* TODO: Max width based on something else? */}
@@ -96,9 +100,14 @@ export const Commit = ({
                 style={{
                   marginLeft: '15px',
                 }}
-                onClick={() => {
-                  // TODO
-                  // setRebase(undefined);
+                onClick={async () => {
+                  const fromRoot = treeData.commitMap[rebase];
+                  const toRoot = treeData.commitMap[meta.oid];
+
+                  await window.electron.api.rebase({
+                    from: fromRoot,
+                    to: toRoot.metadata.oid,
+                  });
                 }}
               >
                 ⬅ Rebase
