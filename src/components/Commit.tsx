@@ -42,13 +42,12 @@ export const Commit = ({
         }}
       />
       {/* TODO: Max width based on something else? */}
-      <foreignObject x={loc.x + 20} y={loc.y - 15} width="1000" height="50">
-        <div style={{ paddingTop: '3px' }}>
+      <foreignObject x={loc.x + 20} y={loc.y - 15} width="1000" height="30">
+        <div style={{ paddingTop: '1px' }}>
           <div
             style={{
               fontSize: '14px',
-              height: '20px',
-              lineHeight: '20px',
+              lineHeight: '26px', // Should be height of largest element
               margin: '0',
               color:
                 !meta.mainBranch || meta.active ? 'rgb(188 192 196)' : 'grey',
@@ -60,36 +59,28 @@ export const Commit = ({
             </span>{' '}
             {meta.title}
             {meta.active && !meta.mainBranch && !rebase && (
-              <button
-                type="button"
-                style={{
-                  marginLeft: '15px',
-                }}
-              >
-                Uncommit
-              </button>
+              <button type="button">Uncommit</button>
             )}
             {meta.active && !meta.mainBranch && !rebase && (
               <button
                 type="button"
-                style={{
-                  marginLeft: '15px',
-                }}
                 onClick={() => {
                   setRebase(meta.oid);
                 }}
               >
-                Rebase ⮕
+                Rebase →
               </button>
             )}
             {rebase === meta.oid && (
               <button
                 type="button"
-                style={{
-                  marginLeft: '15px',
-                }}
                 onClick={() => {
                   setRebase(undefined);
+                }}
+                style={{
+                  color: 'black',
+                  backgroundColor: '#FF5733',
+                  borderColor: '#FF3408',
                 }}
               >
                 Cancel Rebase
@@ -100,9 +91,6 @@ export const Commit = ({
               !commit.branchSplits.some((x) => x.metadata.oid === rebase) && (
                 <button
                   type="button"
-                  style={{
-                    marginLeft: '15px',
-                  }}
                   onClick={async () => {
                     const fromRoot = treeData.commitMap[rebase];
                     const toRoot = treeData.commitMap[meta.oid];
@@ -113,7 +101,7 @@ export const Commit = ({
                     });
                   }}
                 >
-                  ⬅ Rebase
+                  ← Rebase
                 </button>
               )}
           </div>

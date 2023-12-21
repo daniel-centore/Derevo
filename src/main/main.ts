@@ -17,6 +17,7 @@ import os from 'os';
 import * as pty from 'node-pty';
 import { exec } from 'child_process';
 import util from 'node:util';
+import { v4 as uuid } from 'uuid';
 import MenuBuilder from './menu';
 import { resolveHtmlPath, sleep } from './util';
 import { extractGitTree } from './gitlib/git-tree';
@@ -37,7 +38,7 @@ const reloadGitTree = async () => {
   console.log('Responding...', { mainWindow: !!mainWindow });
   // return result;
   mainWindow?.webContents.send('extractGitTree', result);
-}
+};
 
 // TODO: rename
 ipcMain.handle('extractGitTree', async (event, data) => {
@@ -104,16 +105,35 @@ ipcMain.handle('run-cmds', async (event, data) => {
   // await spawn('vim', dir);
 });
 
-const performRebase = async ({
+type BranchRename = {
+  tempBranchName: string;
+  goalBranches: string[];
+};
+
+const performRebaseHelper = async ({
   from,
   to,
+  branchRenames,
 }: {
   from: TreeCommit;
   to: string;
+  branchRenames: BranchRename[];
 }) => {
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
-  // TODO: Validation
-  const fromBranch = from.metadata.branches[0];
+  // TODO: Handle situation when a commit in the graph has no branch
+  // TODO: Handle situation when a commit has multiple branches
+  const tempBranchName = `tmp-${uuid()}`;
+  await spawn(
+    `git branch --no-track ${tempBranchName} ${from.metadata.oid}`,
+    dir,
+  );
+
+  branchRenames.push({
+    tempBranchName,
+    goalBranches: from.metadata.branches,
+  });
+
+  const fromBranch = tempBranchName;
   const returnValue = await spawn(
     `git rebase --onto ${to} ${fromBranch}~ ${fromBranch}`,
     dir,
@@ -148,8 +168,31 @@ const performRebase = async ({
 
   for (const split of from.branchSplits) {
     // eslint-disable-next-line no-await-in-loop
-    await performRebase({ from: split, to: fromBranch });
+    await performRebaseHelper({ from: split, to: fromBranch, branchRenames });
   }
+};
+
+const performRebase = async ({
+  from,
+  to,
+}: {
+  from: TreeCommit;
+  to: string;
+}) => {
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+  const branchRenames: BranchRename[] = [];
+  await performRebaseHelper({ from, to, branchRenames });
+  for (const { goalBranches, tempBranchName } of branchRenames) {
+    for (const goalBranch of goalBranches) {
+      // eslint-disable-next-line no-await-in-loop
+      await spawn(`git branch --force ${goalBranch} ${tempBranchName}`, dir);
+    }
+    // eslint-disable-next-line no-await-in-loop
+    await spawn(`git checkout ${to}`, dir);
+    // eslint-disable-next-line no-await-in-loop
+    await spawn(`git branch -D ${tempBranchName}`, dir);
+  }
+  await reloadGitTree();
 };
 
 ipcMain.handle('rebase', async (_, data) => {
@@ -202,8 +245,8 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1000,
-    height: 728,
+    width: 950,
+    height: 750,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged

@@ -16,10 +16,7 @@ const rawCommitToMeta = ({
 }): CommitMetadata => ({
   oid: rawCommit.oid,
   branches: branch ? [branch] : [],
-  title: `${rawCommit.commit.message.split('\n')[0]} (${rawCommit.oid.substring(
-    0,
-    7,
-  )})`,
+  title: `${rawCommit.commit.message.split('\n')[0]}`,
   active: rawCommit.oid === activeCommit,
   mainBranch,
   authorTs: new Date(rawCommit.commit.author.timestamp * 1000),
