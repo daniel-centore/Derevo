@@ -158,6 +158,11 @@ ipcMain.handle('rebase', async (_, data) => {
   await performRebase({ from, to });
 });
 
+ipcMain.handle('git-pull', async () => {
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+  await spawn('git pull origin main', dir);
+});
+
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
   sourceMapSupport.install();

@@ -94,7 +94,7 @@ const createTreeChunk = ({
     }
     components.push(
       <Commit
-        meta={commit.metadata}
+        commit={commit}
         treeData={treeData}
         loc={loc}
         isRebase={isRebaseTemp}

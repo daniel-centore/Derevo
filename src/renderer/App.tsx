@@ -22,7 +22,7 @@ const Main = () => {
       }}
     >
       <h1>Derevo</h1>
-      <div>
+      <div style={{ marginBottom: '10px' }}>
         <button
           type="button"
           onClick={() => {
@@ -30,6 +30,14 @@ const Main = () => {
           }}
         >
           Refresh
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            window.electron.api.invoke('git-pull');
+          }}
+        >
+          Pull
         </button>
       </div>
       <div slot="start" style={{ flexGrow: 1, overflowY: 'scroll' }}>

@@ -6,7 +6,6 @@ import { TreeCommit } from '../types/types';
 const electronHandler = {
   // ipcRenderer,
   api: {
-    // TODO: Replace with specialized
     invoke: (channel: string, ...args: unknown[]) => {
       return ipcRenderer.invoke(channel, args);
     },

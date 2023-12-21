@@ -1,20 +1,21 @@
-import { CommitMetadata, Point, TreeCommit, TreeData } from '../types/types';
+import { Point, TreeCommit, TreeData } from '../types/types';
 
 export const Commit = ({
-  meta,
+  commit,
   treeData,
   loc,
   isRebase,
   rebase,
   setRebase,
 }: {
-  meta: CommitMetadata;
+  commit: TreeCommit;
   treeData: TreeData;
   loc: Point;
   isRebase: boolean;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
 }) => {
+  const meta = commit.metadata;
   let circleColor = 'grey';
   if (meta.active) {
     circleColor = 'cyan';
@@ -94,25 +95,27 @@ export const Commit = ({
                 Cancel Rebase
               </button>
             )}
-            {rebase && !isRebase && (
-              <button
-                type="button"
-                style={{
-                  marginLeft: '15px',
-                }}
-                onClick={async () => {
-                  const fromRoot = treeData.commitMap[rebase];
-                  const toRoot = treeData.commitMap[meta.oid];
+            {rebase &&
+              !isRebase &&
+              !commit.branchSplits.some((x) => x.metadata.oid === rebase) && (
+                <button
+                  type="button"
+                  style={{
+                    marginLeft: '15px',
+                  }}
+                  onClick={async () => {
+                    const fromRoot = treeData.commitMap[rebase];
+                    const toRoot = treeData.commitMap[meta.oid];
 
-                  await window.electron.api.rebase({
-                    from: fromRoot,
-                    to: toRoot.metadata.oid,
-                  });
-                }}
-              >
-                ⬅ Rebase
-              </button>
-            )}
+                    await window.electron.api.rebase({
+                      from: fromRoot,
+                      to: toRoot.metadata.oid,
+                    });
+                  }}
+                >
+                  ⬅ Rebase
+                </button>
+              )}
           </div>
         </div>
       </foreignObject>
