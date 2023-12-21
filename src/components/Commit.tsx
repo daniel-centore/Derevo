@@ -28,11 +28,12 @@ export const Commit = ({
         r="8"
         fill={circleColor}
         cursor={rebase ? 'default' : 'pointer'}
-        onClick={() => {
+        onClick={async () => {
           if (rebase) {
             return;
           }
-          window.electron.api.invoke('checkout', meta.oid);
+          const ref = meta.branches[0] || meta.oid;
+          await window.electron.api.invoke('checkout', ref);
         }}
       />
       {/* TODO: Max width based on something else? */}

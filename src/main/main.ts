@@ -13,10 +13,8 @@ import electron, { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import os from 'os';
-// import pty from 'node-pty';
-// import pty from '@homebridge/node-pty-prebuilt-multiarch';
-import { exec } from 'child_process';
-import util from 'node:util';
+// import { shellPath } from 'shell-path';
+import * as pty from 'node-pty';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import { extractGitTree } from './gitlib/git-tree';
@@ -38,33 +36,55 @@ ipcMain.handle('extractGitTree', async (event, data) => {
   mainWindow?.webContents.send('extractGitTree', result);
 });
 
+let ptyProcess: pty.IPty | null = null;
+
+const spawn = async (cmd: string, cwd: string) => {
+  if (ptyProcess) {
+    console.log('Process already running; queuing the cmd');
+    ptyProcess.onExit(() => {
+      spawn(cmd, cwd);
+    });
+  }
+
+  // const shPath = await shellPath();
+  const platformShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
+  ptyProcess = pty.spawn(platformShell, ['-c', cmd], {
+    name: 'xterm-color',
+    cols: 80,
+    rows: 10,
+    cwd,
+    // TODO: Fix path
+    env: { ...process.env },
+  });
+
+  mainWindow?.webContents.send('terminal-out', `${cmd}\r\n`);
+
+  ptyProcess.onData((ptyData) => {
+    console.log({ptyData});
+    mainWindow?.webContents.send('terminal-out', ptyData);
+  });
+
+  const ptyProcessFinal = ptyProcess;
+  return new Promise<void>((resolve) => {
+    ptyProcessFinal.onExit(() => {
+      mainWindow?.webContents.send('terminal-out', '\r\n> ');
+      ptyProcess = null;
+      resolve();
+    });
+  });
+
+};
+
+ipcMain.handle('terminal-in', (_event, ptyData) => {
+  ptyProcess?.write(ptyData[0]);
+});
+
 ipcMain.handle('checkout', async (event, data) => {
   console.log('Checkout', { data });
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
-  const execPromise = util.promisify(exec);
-  await execPromise(`git checkout ${data[0]}`, { cwd: dir });
-  // await git.checkout({
-  //   fs,
-  //   dir,
-  //   ref: data,
-  // });
-  // const platformShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-  // const ptyProcess = pty.spawn(platformShell, [], {
-  //   name: 'xterm-color',
-  //   cols: 80,
-  //   rows: 24,
-  //   cwd: process.env.HOME,
-  //   env: process.env,
-  // });
-  // // ptyProcess.
 
-  // ptyProcess.onData((ptyData) => {
-  //    mainWindow?.webContents.send('terminal-incData', ptyData);
-  // });
-
-  // ipcMain.on('terminal-into', (_event, ptyData) => {
-  //   ptyProcess.write(ptyData);
-  // });
+  await spawn(`git -c advice.detachedHead=false checkout ${data[0]}`, dir);
+  // await spawn('vim', dir);
 
   const result = await extractGitTree();
   mainWindow?.webContents.send('extractGitTree', result);
@@ -77,10 +97,6 @@ if (process.env.NODE_ENV === 'production') {
 
 const isDebug =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
-
-// if (isDebug) {
-//   require('electron-debug')();
-// }
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');

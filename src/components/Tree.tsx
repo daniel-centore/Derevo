@@ -10,7 +10,15 @@ type TreeChunkData = {
   height: number;
 };
 
-const Line = ({ locA, locB, stroke }: { locA: Point; locB: Point; stroke: string }) => {
+const Line = ({
+  locA,
+  locB,
+  stroke,
+}: {
+  locA: Point;
+  locB: Point;
+  stroke: string;
+}) => {
   return (
     <line
       x1={locA.x}
@@ -61,10 +69,25 @@ const createTreeChunk = ({
   let commit: TreeCommit | null = root;
   let isRebaseTemp = isRebase;
   while (commit) {
+    // TODO: Base hiding unimportant commits on this
+    // if (
+    //   commit.metadata.mainBranch &&
+    //   !commit.metadata.active &&
+    //   commit.branchSplits.length === 1
+    // ) {
+    //   commit = head(commit.branchSplits) ?? null;
+    //   continue;
+    // }
     const loc: Point = { x: chunkLoc.x, y: chunkLoc.y + yOffset };
     isRebaseTemp = isRebaseTemp || commit.metadata.oid === rebase;
     if (lastLoc) {
-      lines.push(<Line locA={loc} locB={lastLoc} stroke={isRebaseTemp ? 'red' : 'grey'} />);
+      lines.push(
+        <Line
+          locA={loc}
+          locB={lastLoc}
+          stroke={isRebaseTemp ? 'red' : 'grey'}
+        />,
+      );
     }
     components.push(
       <Commit
@@ -72,15 +95,9 @@ const createTreeChunk = ({
         loc={loc}
         isRebase={isRebaseTemp}
         rebase={rebase}
-        setRebase={setRebase}  // TODO: Disable?
+        setRebase={setRebase} // TODO: Disable?
       />,
     );
-
-    if (commit.metadata.title.includes('01100c1')) {
-      console.log('kapusta A', {
-        splits: commit.branchSplits.map((x) => x.metadata.authorTs),
-      });
-    }
 
     // Consistent branch sorting order, with main on left side and older branches
     // further left
@@ -93,12 +110,6 @@ const createTreeChunk = ({
       }
       return a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
     });
-
-    if (commit.metadata.title.includes('01100c1')) {
-      console.log('kapusta B', {
-        splits: commit.branchSplits.map((x) => x.metadata.authorTs),
-      });
-    }
 
     for (let i = 1; i < commit.branchSplits.length; i++) {
       const split = commit.branchSplits[i];
@@ -116,14 +127,18 @@ const createTreeChunk = ({
       });
       yOffset -= BRANCH_EXTRA_Y_OFFSET;
 
-      lines.push(<BranchOff to={branchSplitLoc} stroke={branchIsRebase ? 'red' : 'grey'} />);
+      lines.push(
+        <BranchOff
+          to={branchSplitLoc}
+          stroke={branchIsRebase ? 'red' : 'grey'}
+        />,
+      );
       lines.push(...chunk.lines);
       components.push(...chunk.components);
       yOffset -= chunk.height;
     }
 
-    const mainDescendant: TreeCommit | null = head(commit.branchSplits) ?? null;
-    commit = mainDescendant;
+    commit = head(commit.branchSplits) ?? null;
     yOffset -= COMMIT_HEIGHT;
     lastLoc = loc;
   }
@@ -138,9 +153,22 @@ const createTreeChunk = ({
 const HEIGHT_OFFSET = COMMIT_HEIGHT / 2;
 const WIDTH = 1000; // TODO: Compute max width instead
 
-export const Tree = ({ treeData }: { treeData: TreeData }) => {
+export const Tree = () => {
+  const [treeData, setTreeData] = useState<TreeData>();
   const [rebase, setRebase] = useState<string>();
-  if (!treeData.rootCommit) {
+
+  useEffect(() => {
+    // console.log('Subscribed in renderer');
+    const unsubscribe = window.electron.api.on('extractGitTree', (result) => {
+      // TODO: Improve types?
+      // console.log('RECEIVED MESSAGE', { result });
+      setTreeData(result as TreeData);
+      // setTreeData({test123: 45});
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (!treeData?.rootCommit) {
     return <p>No data</p>;
   }
   const chunk = createTreeChunk({
@@ -150,9 +178,6 @@ export const Tree = ({ treeData }: { treeData: TreeData }) => {
     setRebase,
     isRebase: false,
   });
-  // const tree = useAsync(async () => {
-  //   // await extractTree();
-  // });
   return (
     <div>
       <svg
