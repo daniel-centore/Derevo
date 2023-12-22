@@ -56,6 +56,7 @@ export const Commit = ({
           >
             <span style={{ backgroundColor: 'grey', color: 'black' }}>
               {meta.branches.length > 0 && `[${meta.branches.join(', ')}]`}
+              {meta.branches.length === 0 && !meta.mainBranch && '[NO BRANCH]'}
             </span>{' '}
             {meta.title}
             {meta.active && !meta.mainBranch && !rebase && (

@@ -1,8 +1,6 @@
 export type CommitMetadata = {
   oid: string;
   title: string;
-  // hash: string;
-  // timestamp: Date;
   active: boolean;
   branches: string[];
   mainBranch: boolean;

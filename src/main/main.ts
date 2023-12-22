@@ -17,11 +17,13 @@ import os from 'os';
 import * as pty from 'node-pty';
 import { exec } from 'child_process';
 import util from 'node:util';
-import { v4 as uuid } from 'uuid';
+import { customAlphabet } from 'nanoid';
 import MenuBuilder from './menu';
 import { resolveHtmlPath, sleep } from './util';
 import { extractGitTree } from './gitlib/git-tree';
 import { TreeCommit } from '../types/types';
+
+const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 10);
 
 class AppUpdater {
   constructor() {
@@ -122,7 +124,7 @@ const performRebaseHelper = async ({
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   // TODO: Handle situation when a commit in the graph has no branch
   // TODO: Handle situation when a commit has multiple branches
-  const tempBranchName = `tmp-${uuid()}`;
+  const tempBranchName = `tmp-${nanoid()}`;
   await spawn(
     `git branch --no-track ${tempBranchName} ${from.metadata.oid}`,
     dir,
@@ -147,6 +149,7 @@ const performRebaseHelper = async ({
       // await execPromise('git add .', { cwd: dir });
 
       try {
+        // --find-renames
         // eslint-disable-next-line no-await-in-loop
         await execPromise('git diff --check', { cwd: dir });
       } catch (e) {
@@ -188,9 +191,13 @@ const performRebase = async ({
       await spawn(`git branch --force ${goalBranch} ${tempBranchName}`, dir);
     }
     // eslint-disable-next-line no-await-in-loop
-    await spawn(`git checkout ${to}`, dir);
-    // eslint-disable-next-line no-await-in-loop
-    await spawn(`git branch -D ${tempBranchName}`, dir);
+    await spawn(`git -c advice.detachedHead=false checkout ${to}`, dir);
+
+    // Don't want to delete the branch if the commit will disappear
+    if (from.metadata.branches.length > 0 || from.branchSplits.length > 0) {
+      // eslint-disable-next-line no-await-in-loop
+      await spawn(`git branch -D ${tempBranchName}`, dir);
+    }
   }
   await reloadGitTree();
 };

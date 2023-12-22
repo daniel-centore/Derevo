@@ -67,8 +67,8 @@ export const extractGitTree = async (): Promise<TreeData> => {
 
   const branches = await git.listBranches({ fs, dir });
   // const branches = ['spr-8c8998', 'spr-cb27e1', 'spr-c543ff'];
-  for (const branch of branches) {
-    if (branch === mainBranch) {
+  for (const ref of [...branches.map(branch => ({branch})), {oid: activeCommit}]) {
+    if ('branch' in ref && ref.branch === mainBranch) {
       continue;
     }
     // TODO: Refactor to do this outside of loop?
@@ -76,7 +76,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
     const branchCommits = await git.log({
       fs,
       dir,
-      ref: branch,
+      ref: 'branch' in ref ? ref.branch : ref.oid,
     });
 
     previousCommit = null;
@@ -92,8 +92,8 @@ export const extractGitTree = async (): Promise<TreeData> => {
       // console.log({ rawCommit });
       if (rawCommit.oid in commitMap) {
         // Link to the existing commit in the map and quit this branch
-        if (i === 0) {
-          commitMap[rawCommit.oid].metadata.branches.push(branch);
+        if (i === 0 && 'branch' in ref) {
+          commitMap[rawCommit.oid].metadata.branches.push(ref.branch);
         }
         if (previousCommit) {
           commitMap[rawCommit.oid].branchSplits.push(previousCommit);
@@ -105,7 +105,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
       const commit: TreeCommit = {
         metadata: rawCommitToMeta({
           rawCommit,
-          branch: i === 0 ? branch : null,
+          branch: i === 0 && 'branch' in ref ? ref.branch : null,
           activeCommit,
           mainBranch: false,
         }),
