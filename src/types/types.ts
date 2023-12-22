@@ -8,9 +8,17 @@ export type CommitMetadata = {
 };
 
 export type TreeCommit = {
-  branchSplits: TreeCommit[];
+  type: 'commit';
+  // eslint-disable-next-line no-use-before-define
+  branchSplits: TreeEntry[];
   metadata: CommitMetadata;
 };
+
+export type TreeRebase = {
+  type: 'rebase';
+}
+
+export type TreeEntry = TreeCommit | TreeRebase;
 
 export type TreeData = {
   rootCommit: TreeCommit | null;

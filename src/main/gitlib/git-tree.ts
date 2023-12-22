@@ -33,44 +33,22 @@ export const extractGitTree = async (): Promise<TreeData> => {
     ref: 'HEAD',
   });
 
-  const mainBranchCommits = await git.log({
-    fs,
-    dir,
-    ref: mainBranch,
-  });
   const commitMap: Record<string, TreeCommit> = {};
 
-  let previousCommit: TreeCommit | null = null;
-  for (let i = 0; i < mainBranchCommits.length; i++) {
-    const rawCommit = mainBranchCommits[i];
-    // console.log(
-    //   'Raw Commit Main',
-    //   util.inspect(
-    //     { rawCommit },
-    //     { showHidden: false, depth: null, colors: true },
-    //   ),
-    // );
-    const commit: TreeCommit = {
-      metadata: rawCommitToMeta({
-        rawCommit,
-        branch: i === 0 ? mainBranch : null,
-        activeCommit,
-        mainBranch: true,
-      }),
-      branchSplits: previousCommit ? [previousCommit] : [],
-    };
-    commitMap[rawCommit.oid] = commit;
-    previousCommit = commit;
-  }
-  const rootCommit = previousCommit;
-  // console.log('kapusta', { rootCommit });
-
+  let rootCommit: TreeCommit | null = null;
   const branches = await git.listBranches({ fs, dir });
   // const branches = ['spr-8c8998', 'spr-cb27e1', 'spr-c543ff'];
-  for (const ref of [...branches.map(branch => ({branch})), {oid: activeCommit}]) {
-    if ('branch' in ref && ref.branch === mainBranch) {
-      continue;
-    }
+  const refs: ({ branch: string } | { oid: string })[] = [
+    { branch: mainBranch },
+    { oid: activeCommit },
+    ...branches.map((branch) => ({ branch })),
+  ];
+  for (const ref of refs) {
+    const isMainBranch = 'branch' in ref && ref.branch === mainBranch;
+
+    // if ('branch' in ref && ref.branch === mainBranch) {
+    //   continue;
+    // }
     // TODO: Refactor to do this outside of loop?
     // eslint-disable-next-line no-await-in-loop
     const branchCommits = await git.log({
@@ -79,7 +57,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
       ref: 'branch' in ref ? ref.branch : ref.oid,
     });
 
-    previousCommit = null;
+    let previousCommit = null;
     for (let i = 0; i < branchCommits.length; i++) {
       const rawCommit = branchCommits[i];
       // console.log(
@@ -103,22 +81,33 @@ export const extractGitTree = async (): Promise<TreeData> => {
 
       // Add new commit
       const commit: TreeCommit = {
+        type: 'commit',
         metadata: rawCommitToMeta({
           rawCommit,
           branch: i === 0 && 'branch' in ref ? ref.branch : null,
           activeCommit,
-          mainBranch: false,
+          mainBranch: isMainBranch,
         }),
         branchSplits: previousCommit ? [previousCommit] : [],
-        // mainDescendant: previousCommit,
       };
+
+      if (rawCommit.oid === activeCommit) {
+        // TODO: populate metadata
+        // eslint-disable-next-line no-await-in-loop
+        // const files = await git.listFiles({ fs });
+        // console.log({files});
+        // .git/rebase-merge/done
+        commit.branchSplits.push({
+          type: 'rebase',
+        });
+      }
+
       commitMap[rawCommit.oid] = commit;
       previousCommit = commit;
+      if (isMainBranch && i === branchCommits.length - 1) {
+        rootCommit = commit;
+      }
     }
-
-    // console.log('kapusta', { rootCommit });
-
-    // console.log('Branch Commits', { branch, commits });
   }
   // console.log(
   //   'Branch Commits',

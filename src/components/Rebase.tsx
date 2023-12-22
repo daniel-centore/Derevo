@@ -1,48 +1,41 @@
 import { Point, TreeCommit, TreeData } from '../types/types';
 
-export const Commit = ({
-  commit,
-  treeData,
+export const Rebase = ({
+  // commit,
+  // treeData,
   loc,
-  isRebase,
-  rebase,
-  setRebase,
+  // isRebase,
+  // rebase,
+  // setRebase,
 }: {
-  commit: TreeCommit;
-  treeData: TreeData;
+  // commit: TreeCommit;
+  // treeData: TreeData;
   loc: Point;
-  isRebase: boolean;
-  rebase: string | undefined;
-  setRebase: (oid: string | undefined) => void;
+  // isRebase: boolean;
+  // rebase: string | undefined;
+  // setRebase: (oid: string | undefined) => void;
 }) => {
-  const meta = commit.metadata;
-  let circleColor = 'grey';
-  if (meta.active) {
-    circleColor = 'cyan';
-  }
-  if (isRebase) {
-    circleColor = 'red';
-  }
+  // const meta = commit.metadata;
   return (
     <>
       <circle
         cx={loc.x}
         cy={loc.y}
         r="8"
-        fill={circleColor}
-        cursor={rebase ? 'default' : 'pointer'}
-        onClick={async () => {
-          if (rebase) {
-            return;
-          }
-          const ref = meta.branches[0] || meta.oid;
-          await window.electron.api.runCommands([
-            `git -c advice.detachedHead=false checkout ${ref}`,
-          ]);
-        }}
+        fill="green"
+        // cursor={rebase ? 'default' : 'pointer'}
+        // onClick={async () => {
+        //   if (rebase) {
+        //     return;
+        //   }
+        //   const ref = meta.branches[0] || meta.oid;
+        //   await window.electron.api.runCommands([
+        //     `git -c advice.detachedHead=false checkout ${ref}`,
+        //   ]);
+        // }}
       />
       {/* TODO: Max width based on something else? */}
-      <foreignObject x={loc.x + 20} y={loc.y - 15} width="1000" height="30">
+      {/* <foreignObject x={loc.x + 20} y={loc.y - 15} width="1000" height="30">
         <div style={{ paddingTop: '1px' }}>
           <div
             style={{
@@ -109,7 +102,7 @@ export const Commit = ({
               )}
           </div>
         </div>
-      </foreignObject>
+      </foreignObject> */}
     </>
   );
 };

@@ -170,6 +170,9 @@ const performRebaseHelper = async ({
   await reloadGitTree();
 
   for (const split of from.branchSplits) {
+    if (split.type !== 'commit') {
+      continue;
+    }
     // eslint-disable-next-line no-await-in-loop
     await performRebaseHelper({ from: split, to: fromBranch, branchRenames });
   }
