@@ -22,6 +22,7 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath, sleep } from './util';
 import { extractGitTree } from './gitlib/git-tree';
 import { TreeCommit } from '../types/types';
+import { rebaseInProgress } from './gitlib/gitlib';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 10);
 
@@ -41,6 +42,20 @@ const reloadGitTree = async () => {
   // return result;
   mainWindow?.webContents.send('extractGitTree', result);
 };
+
+const REFRESH_FREQUENCY = 1000;
+
+const autoReloadGitTree = async () => {
+  try {
+    await reloadGitTree();
+  } catch (e) {
+    console.error(e);
+  }
+
+  setTimeout(autoReloadGitTree, REFRESH_FREQUENCY);
+}
+
+autoReloadGitTree();
 
 // TODO: rename
 ipcMain.handle('extractGitTree', async (event, data) => {
@@ -141,30 +156,19 @@ const performRebaseHelper = async ({
     dir,
   );
   if (returnValue !== 0) {
-    let hasConflict = true;
-    while (hasConflict) {
-      // TODO: Do something
-      const execPromise = util.promisify(exec);
-      // eslint-disable-next-line no-await-in-loop
-      // await execPromise('git add .', { cwd: dir });
-
-      try {
-        // --find-renames
-        // eslint-disable-next-line no-await-in-loop
-        await execPromise('git diff --check', { cwd: dir });
-      } catch (e) {
-        console.log('Merge in progress...');
-        // eslint-disable-next-line no-await-in-loop
+    let waitingForRebaseComplete = true;
+    while (waitingForRebaseComplete) {
+      const rebasing = await rebaseInProgress(dir);
+      if (!rebasing) {
+        waitingForRebaseComplete = false;
+      } else {
         await sleep(500);
-        continue;
       }
 
-      console.log('Completed!');
-      hasConflict = false;
     }
     // TODO: Wait for "Continue"
-    await spawn('git add .', dir);
-    await spawn('git -c core.editor=true rebase --continue', dir);
+    // await spawn('git add .', dir);
+    // await spawn('git -c core.editor=true rebase --continue', dir);
   }
 
   await reloadGitTree();

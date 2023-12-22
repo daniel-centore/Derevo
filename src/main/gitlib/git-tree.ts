@@ -1,7 +1,9 @@
 import fs from 'fs';
 import git, { ReadCommitResult } from 'isomorphic-git';
 import util from 'util';
+import { exec } from 'child_process';
 import { CommitMetadata, TreeCommit, TreeData } from '../../types/types';
+import { getModifiedFiles, rebaseInProgress } from './gitlib';
 
 const rawCommitToMeta = ({
   rawCommit,
@@ -34,6 +36,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
   });
 
   const commitMap: Record<string, TreeCommit> = {};
+  let dirty = false;
 
   let rootCommit: TreeCommit | null = null;
   const branches = await git.listBranches({ fs, dir });
@@ -92,14 +95,62 @@ export const extractGitTree = async (): Promise<TreeData> => {
       };
 
       if (rawCommit.oid === activeCommit) {
-        // TODO: populate metadata
+        // TODO: populate dirty status
+
+        const execPromise = util.promisify(exec);
+        // eslint-disable-next-line no-await-in-loop
+        const unmergedFiles = await getModifiedFiles(dir, {
+          variant: 'modified',
+        });
+
+        console.log({ unmergedFiles });
+
+        if (unmergedFiles.length > 0) {
+          // Dirty
+          dirty = true;
+        }
+
+        const rebaseFolderExists = await rebaseInProgress(dir);
+        // const conflictedFile = (
+        //   // eslint-disable-next-line no-await-in-loop
+        //   await Promise.all(
+        //     unmergedFiles.map((file) => readFilePromise(file, 'utf-8')),
+        //   )
+        // ).map((text) => text.split('\n'));
+
+        // TODO: Check for active merge
+        if (rebaseFolderExists) {
+          dirty = true;
+        }
+
+        if (rebaseFolderExists) {
+          const readFilePromise = util.promisify(fs.readFile);
+          const conflictedFiles = [];
+          for (const file of unmergedFiles) {
+            const contents = await readFilePromise(file, 'utf-8');
+            const lines = contents.split(/\r?\n/);
+            if (lines.some((line) => line.startsWith('<<<<<<<'))) {
+              conflictedFiles.push(file);
+            }
+          }
+
+          commit.branchSplits.push({
+            type: 'rebase',
+            dirtyFiles: unmergedFiles,
+            conflictedFiles,
+          });
+        } else if (unmergedFiles.length > 0) {
+          // TODO: Handle non-rebase situation
+          commit.branchSplits.push({
+            type: 'modified',
+            dirtyFiles: unmergedFiles,
+          });
+        }
+
         // eslint-disable-next-line no-await-in-loop
         // const files = await git.listFiles({ fs });
         // console.log({files});
-        // .git/rebase-merge/done
-        commit.branchSplits.push({
-          type: 'rebase',
-        });
+        //
       }
 
       commitMap[rawCommit.oid] = commit;
@@ -119,5 +170,6 @@ export const extractGitTree = async (): Promise<TreeData> => {
   return {
     rootCommit,
     commitMap,
+    dirty,
   };
 };

@@ -22,6 +22,7 @@ module.exports = {
     'no-plusplus': 'off',
     'prefer-destructuring': 'off',
     'no-continue': 'off',
+    'no-await-in-loop': 'warn',
   },
   parserOptions: {
     ecmaVersion: 2022,

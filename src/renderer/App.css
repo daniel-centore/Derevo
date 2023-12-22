@@ -24,19 +24,15 @@ button {
   border-width: 1.5px;
   font-size: 10pt;
   transition: all ease-in 0.05s;
-  cursor: pointer;
-  /* opacity: 0.9; */
   color: rgb(164 167 171);
   background-color: rgb(50 52 54);
   border-style: solid;
   border-color: rgb(75 76 79);
 }
 
-button:hover {
-  /* transform: scale(1.05);
-  opacity: 1; */
-  /* opacity: 1; */
+button:hover:enabled {
   background-color: rgb(67, 65, 65);
+  cursor: pointer;
 }
 
 button:focus-visible {

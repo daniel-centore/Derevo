@@ -1,15 +1,15 @@
-import { Point, TreeCommit, TreeData, TreeRebase } from '../types/types';
+import { Point, TreeCommit, TreeData, TreeModified, TreeRebase } from '../types/types';
 
-export const Rebase = ({
+export const Modified = ({
   // commit,
-  treeRebase,
+  entry,
   treeData,
   loc, // isRebase,
   // setRebase,
 } // rebase,
 : {
   // commit: TreeCommit;
-  treeRebase: TreeRebase;
+  entry: TreeModified;
   treeData: TreeData;
   loc: Point;
   // isRebase: boolean;
@@ -32,25 +32,22 @@ export const Rebase = ({
               fontWeight: 'bold',
             }}
           >
-            Rebase in Progress
+            Modifications Ready
             <br />
-            Dirty: {treeRebase.dirtyFiles.join(', ')}
-            <br />
-            Conflicts: {treeRebase.conflictedFiles.join(', ')}
+            Dirty: {entry.dirtyFiles.join(', ')}
           </div>
           <button
             type="button"
             style={{ marginTop: '7px' }}
             onClick={async () => {
-              await window.electron.api.runCommands([
-                'git add .',
-                'git -c core.editor=true rebase --continue',
-              ]);
+              // await window.electron.api.runCommands([
+              //   'git add .',
+              //   'git -c core.editor=true rebase --continue',
+              // ]);
             }}
           >
-            Continue
+            Commit
           </button>
-          {/* TODO: Abort button */}
         </div>
       </foreignObject>
     </>

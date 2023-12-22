@@ -30,9 +30,9 @@ export const Commit = ({
         cy={loc.y}
         r="8"
         fill={circleColor}
-        cursor={rebase ? 'default' : 'pointer'}
+        cursor={rebase || treeData.dirty ? 'default' : 'pointer'}
         onClick={async () => {
-          if (rebase) {
+          if (rebase || treeData.dirty) {
             return;
           }
           const ref = meta.branches[0] || meta.oid;
@@ -59,10 +59,7 @@ export const Commit = ({
               {meta.branches.length === 0 && !meta.mainBranch && '[NO BRANCH]'}
             </span>{' '}
             {meta.title}
-            {meta.active && !meta.mainBranch && !rebase && (
-              <button type="button">Uncommit</button>
-            )}
-            {meta.active && !meta.mainBranch && !rebase && (
+            {!treeData.dirty && meta.active && !meta.mainBranch && !rebase && (
               <button
                 type="button"
                 onClick={() => {
@@ -72,7 +69,7 @@ export const Commit = ({
                 Rebase →
               </button>
             )}
-            {rebase === meta.oid && (
+            {!treeData.dirty && rebase === meta.oid && (
               <button
                 type="button"
                 onClick={() => {
@@ -87,7 +84,8 @@ export const Commit = ({
                 Cancel Rebase
               </button>
             )}
-            {rebase &&
+            {!treeData.dirty &&
+              rebase &&
               !isRebase &&
               !commit.branchSplits.some(
                 (x) => x.type === 'commit' && x.metadata.oid === rebase,
@@ -107,6 +105,9 @@ export const Commit = ({
                   ← Rebase
                 </button>
               )}
+            {!treeData.dirty && meta.active && !meta.mainBranch && !rebase && (
+              <button type="button">Uncommit</button>
+            )}
           </div>
         </div>
       </foreignObject>

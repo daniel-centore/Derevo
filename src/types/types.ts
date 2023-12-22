@@ -16,13 +16,21 @@ export type TreeCommit = {
 
 export type TreeRebase = {
   type: 'rebase';
-}
+  dirtyFiles: string[];
+  conflictedFiles: string[];
+};
 
-export type TreeEntry = TreeCommit | TreeRebase;
+export type TreeModified = {
+  type: 'modified';
+  dirtyFiles: string[];
+};
+
+export type TreeEntry = TreeCommit | TreeRebase | TreeModified;
 
 export type TreeData = {
   rootCommit: TreeCommit | null;
   commitMap: Record<string, TreeCommit>;
+  dirty: boolean;
 };
 
 export type Point = {

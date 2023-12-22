@@ -4,6 +4,7 @@ import { head } from 'lodash';
 import { Point, TreeCommit, TreeData, TreeEntry } from '../types/types';
 import { Commit } from './Commit';
 import { Rebase } from './Rebase';
+import { Modified } from './Modified';
 
 type TreeChunkData = {
   components: ReactNode[];
@@ -96,10 +97,19 @@ const createTreeChunk = ({
       );
     }
     if (entry.type === 'rebase') {
-      components.push(<Rebase loc={loc} />);
+      components.push(
+        <Rebase loc={loc} treeData={treeData} treeRebase={entry} />,
+      );
 
       entry = null;
-      yOffset -= 100; // TODO: Correct amount
+      yOffset -= 200; // TODO: Correct amount
+    } else if (entry.type === 'modified') {
+      components.push(
+        <Modified loc={loc} treeData={treeData} entry={entry} />,
+      );
+
+      entry = null;
+      yOffset -= 200; // TODO: Correct amount
     } else if (entry.type === 'commit') {
       components.push(
         <Commit
