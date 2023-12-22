@@ -44,7 +44,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
   const refs: ({ branch: string } | { oid: string })[] = [
     { branch: mainBranch },
     { oid: activeCommit },
-    ...branches.map((branch) => ({ branch })),
+    ...branches.filter((x) => x !== mainBranch).map((branch) => ({ branch })),
   ];
   for (const ref of refs) {
     const isMainBranch = 'branch' in ref && ref.branch === mainBranch;

@@ -21,8 +21,7 @@ const Main = () => {
         flexDirection: 'column',
       }}
     >
-      <h1>Derevo</h1>
-      <div style={{ marginBottom: '10px' }}>
+      <div style={{ marginTop: '18px', marginBottom: '10px' }}>
         <button
           type="button"
           onClick={() => {

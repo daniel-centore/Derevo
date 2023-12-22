@@ -124,6 +124,8 @@ const createTreeChunk = ({
 
       // Consistent branch sorting order, with main on left side and older branches
       // further left
+      // TODO: Update sorting to prefer being based on when the oid was first
+      // seen by Derevo (so rebases always end up further right)
       entry.branchSplits.sort((a, b) => {
         if (a.type !== 'commit' || b.type !== 'commit') {
           return a.type < b.type ? -1 : 1;
@@ -151,6 +153,7 @@ const createTreeChunk = ({
       ) {
         mainDescendent = branchSplits.shift();
       }
+      branchSplits.reverse();
 
       for (let i = 0; i < branchSplits.length; i++) {
         const split = branchSplits[i];

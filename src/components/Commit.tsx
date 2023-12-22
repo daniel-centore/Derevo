@@ -17,7 +17,7 @@ export const Commit = ({
 }) => {
   const meta = commit.metadata;
   let circleColor = 'grey';
-  if (meta.active) {
+  if (meta.active && !treeData.dirty) {
     circleColor = 'cyan';
   }
   if (isRebase) {

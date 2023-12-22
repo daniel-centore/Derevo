@@ -19,7 +19,7 @@ export const Rebase = ({
   // const meta = commit.metadata;
   return (
     <>
-      <circle cx={loc.x} cy={loc.y} r="8" fill="green" />
+      <circle cx={loc.x} cy={loc.y} r="8" fill="cyan" />
       {/* TODO: Max width based on something else? */}
       <foreignObject x={loc.x + 20} y={loc.y - 170} width="1000" height="200">
         <div style={{ paddingTop: '1px', backgroundColor: 'rgb(50 50 50)' }}>
