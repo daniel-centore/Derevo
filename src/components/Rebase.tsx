@@ -5,8 +5,8 @@ export const Rebase = ({
   treeRebase,
   treeData,
   loc, // isRebase,
-  // setRebase,
-} // rebase,
+  // rebase,
+} // setRebase,
 : {
   // commit: TreeCommit;
   treeRebase: TreeRebase;
@@ -38,18 +38,20 @@ export const Rebase = ({
             <br />
             Conflicts: {treeRebase.conflictedFiles.join(', ')}
           </div>
-          <button
-            type="button"
-            style={{ marginTop: '7px' }}
-            onClick={async () => {
-              await window.electron.api.runCommands([
-                'git add .',
-                'git -c core.editor=true rebase --continue',
-              ]);
-            }}
-          >
-            Continue
-          </button>
+          {treeRebase.conflictedFiles.length === 0 && (
+            <button
+              type="button"
+              style={{ marginTop: '7px' }}
+              onClick={async () => {
+                await window.electron.api.runCommands([
+                  'git add .',
+                  'git -c core.editor=true rebase --continue',
+                ]);
+              }}
+            >
+              Continue
+            </button>
+          )}
           {/* TODO: Abort button */}
         </div>
       </foreignObject>
