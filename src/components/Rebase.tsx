@@ -1,4 +1,5 @@
 import { Point, TreeCommit, TreeData, TreeRebase } from '../types/types';
+import { CIRCLE_RADIUS } from './consts';
 
 export const Rebase = ({
   // commit,
@@ -19,7 +20,7 @@ export const Rebase = ({
   // const meta = commit.metadata;
   return (
     <>
-      <circle cx={loc.x} cy={loc.y} r="8" fill="cyan" />
+      <circle cx={loc.x} cy={loc.y} r={CIRCLE_RADIUS} fill="cyan" />
       {/* TODO: Max width based on something else? */}
       <foreignObject x={loc.x + 20} y={loc.y - 170} width="1000" height="200">
         <div style={{ paddingTop: '1px', backgroundColor: 'rgb(50 50 50)' }}>

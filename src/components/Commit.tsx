@@ -1,4 +1,5 @@
 import { Point, TreeCommit, TreeData } from '../types/types';
+import { CIRCLE_RADIUS } from './consts';
 
 export const Commit = ({
   commit,
@@ -28,7 +29,7 @@ export const Commit = ({
       <circle
         cx={loc.x}
         cy={loc.y}
-        r="8"
+        r={CIRCLE_RADIUS}
         fill={circleColor}
         cursor={rebase || treeData.dirty ? 'default' : 'pointer'}
         onClick={async () => {
@@ -42,7 +43,7 @@ export const Commit = ({
         }}
       />
       {/* TODO: Max width based on something else? */}
-      <foreignObject x={loc.x + 20} y={loc.y - 15} width="1000" height="30">
+      <foreignObject x={loc.x + 20} y={loc.y - CIRCLE_RADIUS * 2} width="1000" height="30">
         <div style={{ paddingTop: '1px' }}>
           <div
             style={{

@@ -12,12 +12,14 @@ import path from 'path';
 import electron, { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import os from 'os';
 // import { shellPath } from 'shell-path';
-import { customAlphabet } from 'nanoid';
 import MenuBuilder from './menu';
-import { resolveHtmlPath, sleep } from './util';
-import { autoReloadGitTree, extractGitTree, reloadGitTree } from './gitlib/git-tree';
+import { resolveHtmlPath } from './util';
+import {
+  autoReloadGitTree,
+  extractGitTree,
+  reloadGitTree,
+} from './gitlib/git-tree';
 import { performRebase, spawn, terminalIn } from './gitlib/git-write';
 import { TreeCommit } from '../types/types';
 
@@ -31,14 +33,14 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.handle('extractGitTree', async (event, data) => {
+ipcMain.handle('extractGitTree', async () => {
   if (!mainWindow) {
     return;
   }
   await reloadGitTree({ mainWindow });
 });
 
-ipcMain.handle('run-cmds', async (event, data) => {
+ipcMain.handle('run-cmds', async (_event, data) => {
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
 
   if (!mainWindow) {
@@ -71,10 +73,8 @@ ipcMain.handle('git-pull', async () => {
     return;
   }
 
-
-  await spawn({cmd: 'git pull origin main', dir, mainWindow});
+  await spawn({ cmd: 'git pull origin main', dir, mainWindow });
 });
-
 
 ipcMain.handle('terminal-in', (_event, ptyData) => {
   terminalIn(ptyData[0]);

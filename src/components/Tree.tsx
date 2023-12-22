@@ -4,7 +4,7 @@ import { head } from 'lodash';
 import { Point, TreeCommit, TreeData, TreeEntry } from '../types/types';
 import { Commit } from './Commit';
 import { Rebase } from './Rebase';
-import { Modified } from './Modified';
+import { getModified } from './Modified';
 
 type TreeChunkData = {
   components: ReactNode[];
@@ -104,12 +104,11 @@ const createTreeChunk = ({
       entry = null;
       yOffset -= 200; // TODO: Correct amount
     } else if (entry.type === 'modified') {
-      components.push(
-        <Modified loc={loc} treeData={treeData} entry={entry} />,
-      );
+      const { height, component } = getModified({ loc, treeData, entry });
+      components.push(component);
 
       entry = null;
-      yOffset -= 200; // TODO: Correct amount
+      yOffset -= height; // TODO: Correct amount
     } else if (entry.type === 'commit') {
       components.push(
         <Commit
