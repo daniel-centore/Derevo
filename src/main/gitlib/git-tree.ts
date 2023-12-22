@@ -2,8 +2,9 @@ import fs from 'fs';
 import git, { ReadCommitResult } from 'isomorphic-git';
 import util from 'util';
 import { exec } from 'child_process';
+import { BrowserWindow } from 'electron';
 import { CommitMetadata, TreeCommit, TreeData } from '../../types/types';
-import { getModifiedFiles, rebaseInProgress } from './gitlib';
+import { getModifiedFiles, rebaseInProgress } from './git-read';
 
 const rawCommitToMeta = ({
   rawCommit,
@@ -172,4 +173,33 @@ export const extractGitTree = async (): Promise<TreeData> => {
     commitMap,
     dirty,
   };
+};
+
+export const reloadGitTree = async ({
+  mainWindow,
+}: {
+  mainWindow: BrowserWindow | undefined;
+}) => {
+  const result = await extractGitTree();
+  mainWindow?.webContents.send('extractGitTree', result);
+};
+
+const REFRESH_FREQUENCY = 1000;
+
+export const autoReloadGitTree = async ({
+  mainWindow,
+}: {
+  mainWindow: BrowserWindow | undefined;
+}) => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return;
+  }
+
+  try {
+    await reloadGitTree({ mainWindow });
+  } catch (e) {
+    console.error(e);
+  }
+
+  setTimeout(() => autoReloadGitTree({ mainWindow }), REFRESH_FREQUENCY);
 };

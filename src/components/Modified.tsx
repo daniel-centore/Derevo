@@ -1,22 +1,15 @@
-import { Point, TreeCommit, TreeData, TreeModified, TreeRebase } from '../types/types';
+import { Point, TreeData, TreeModified } from '../types/types';
 
 export const Modified = ({
-  // commit,
   entry,
   treeData,
-  loc, // isRebase,
-  // setRebase,
-} // rebase,
+  loc,
+}
 : {
-  // commit: TreeCommit;
   entry: TreeModified;
   treeData: TreeData;
   loc: Point;
-  // isRebase: boolean;
-  // rebase: string | undefined;
-  // setRebase: (oid: string | undefined) => void;
 }) => {
-  // const meta = commit.metadata;
   return (
     <>
       <circle cx={loc.x} cy={loc.y} r="8" fill="cyan" />

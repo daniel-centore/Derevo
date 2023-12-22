@@ -14,17 +14,12 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import os from 'os';
 // import { shellPath } from 'shell-path';
-import * as pty from 'node-pty';
-import { exec } from 'child_process';
-import util from 'node:util';
 import { customAlphabet } from 'nanoid';
 import MenuBuilder from './menu';
 import { resolveHtmlPath, sleep } from './util';
-import { extractGitTree } from './gitlib/git-tree';
+import { autoReloadGitTree, extractGitTree, reloadGitTree } from './gitlib/git-tree';
+import { performRebase, spawn, terminalIn } from './gitlib/git-write';
 import { TreeCommit } from '../types/types';
-import { rebaseInProgress } from './gitlib/gitlib';
-
-const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 10);
 
 class AppUpdater {
   constructor() {
@@ -36,188 +31,53 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-const reloadGitTree = async () => {
-  const result = await extractGitTree();
-  console.log('Responding...', { mainWindow: !!mainWindow });
-  // return result;
-  mainWindow?.webContents.send('extractGitTree', result);
-};
-
-const REFRESH_FREQUENCY = 1000;
-
-const autoReloadGitTree = async () => {
-  try {
-    await reloadGitTree();
-  } catch (e) {
-    console.error(e);
-  }
-
-  setTimeout(autoReloadGitTree, REFRESH_FREQUENCY);
-}
-
-autoReloadGitTree();
-
-// TODO: rename
 ipcMain.handle('extractGitTree', async (event, data) => {
-  await reloadGitTree();
-});
-
-let ptyProcess: pty.IPty | null = null;
-
-const spawn = async (cmd: string, cwd: string): Promise<number> => {
-  if (ptyProcess) {
-    console.log('Error: Process already running!');
-    // ptyProcess.onExit(() => {
-    //   spawn(cmd, cwd);
-    // });
-    return -1;
+  if (!mainWindow) {
+    return;
   }
-
-  // const shPath = await shellPath();
-  const platformShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-  ptyProcess = pty.spawn(platformShell, ['-c', cmd], {
-    name: 'xterm-color',
-    cols: 80,
-    rows: 10,
-    cwd,
-    // TODO: Fix path
-    env: { ...process.env },
-  });
-
-  mainWindow?.webContents.send('terminal-out', `${cmd}\r\n`);
-
-  ptyProcess.onData((ptyData) => {
-    console.log({ ptyData });
-    mainWindow?.webContents.send('terminal-out', ptyData);
-  });
-
-  const ptyProcessFinal = ptyProcess;
-  return new Promise<number>((resolve) => {
-    ptyProcessFinal.onExit((x) => {
-      mainWindow?.webContents.send('terminal-out', '\r\n> ');
-      ptyProcess = null;
-      resolve(x.exitCode);
-    });
-  });
-};
-
-ipcMain.handle('terminal-in', (_event, ptyData) => {
-  ptyProcess?.write(ptyData[0]);
+  await reloadGitTree({ mainWindow });
 });
 
-// Rebase git -c core.editor=true rebase --continue
 ipcMain.handle('run-cmds', async (event, data) => {
-  console.log('run-cmds', { data });
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
 
+  if (!mainWindow) {
+    return;
+  }
+
   for (const cmd of data as string[]) {
-    // await spawn(`git -c advice.detachedHead=false checkout ${data[0]}`, dir);
-    // eslint-disable-next-line no-await-in-loop
-    await spawn(cmd, dir);
+    await spawn({ cmd, dir, mainWindow });
 
     // eslint-disable-next-line no-await-in-loop
     const result = await extractGitTree();
     mainWindow?.webContents.send('extractGitTree', result);
   }
-  // await spawn('vim', dir);
 });
 
-type BranchRename = {
-  tempBranchName: string;
-  goalBranches: string[];
-};
-
-const performRebaseHelper = async ({
-  from,
-  to,
-  branchRenames,
-}: {
-  from: TreeCommit;
-  to: string;
-  branchRenames: BranchRename[];
-}) => {
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
-  // TODO: Handle situation when a commit in the graph has no branch
-  // TODO: Handle situation when a commit has multiple branches
-  const tempBranchName = `tmp-${nanoid()}`;
-  await spawn(
-    `git branch --no-track ${tempBranchName} ${from.metadata.oid}`,
-    dir,
-  );
-
-  branchRenames.push({
-    tempBranchName,
-    goalBranches: from.metadata.branches,
-  });
-
-  const fromBranch = tempBranchName;
-  const returnValue = await spawn(
-    `git rebase --onto ${to} ${fromBranch}~ ${fromBranch}`,
-    dir,
-  );
-  if (returnValue !== 0) {
-    let waitingForRebaseComplete = true;
-    while (waitingForRebaseComplete) {
-      const rebasing = await rebaseInProgress(dir);
-      if (!rebasing) {
-        waitingForRebaseComplete = false;
-      } else {
-        await sleep(500);
-      }
-
-    }
-    // TODO: Wait for "Continue"
-    // await spawn('git add .', dir);
-    // await spawn('git -c core.editor=true rebase --continue', dir);
-  }
-
-  await reloadGitTree();
-
-  for (const split of from.branchSplits) {
-    if (split.type !== 'commit') {
-      continue;
-    }
-    // eslint-disable-next-line no-await-in-loop
-    await performRebaseHelper({ from: split, to: fromBranch, branchRenames });
-  }
-};
-
-const performRebase = async ({
-  from,
-  to,
-}: {
-  from: TreeCommit;
-  to: string;
-}) => {
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
-  const branchRenames: BranchRename[] = [];
-  await performRebaseHelper({ from, to, branchRenames });
-  for (const { goalBranches, tempBranchName } of branchRenames) {
-    for (const goalBranch of goalBranches) {
-      // eslint-disable-next-line no-await-in-loop
-      await spawn(`git branch --force ${goalBranch} ${tempBranchName}`, dir);
-    }
-    // eslint-disable-next-line no-await-in-loop
-    await spawn(`git -c advice.detachedHead=false checkout ${to}`, dir);
-
-    // Don't want to delete the branch if the commit will disappear
-    if (from.metadata.branches.length > 0 || from.branchSplits.length > 0) {
-      // eslint-disable-next-line no-await-in-loop
-      await spawn(`git branch -D ${tempBranchName}`, dir);
-    }
-  }
-  await reloadGitTree();
-};
-
 ipcMain.handle('rebase', async (_, data) => {
+  if (!mainWindow) {
+    return;
+  }
+
   const { from, to }: { from: TreeCommit; to: string } = data;
 
-  await performRebase({ from, to });
+  await performRebase({ from, to, mainWindow });
 });
 
 ipcMain.handle('git-pull', async () => {
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
-  await spawn('git pull origin main', dir);
+
+  if (!mainWindow) {
+    return;
+  }
+
+
+  await spawn({cmd: 'git pull origin main', dir, mainWindow});
+});
+
+
+ipcMain.handle('terminal-in', (_event, ptyData) => {
+  terminalIn(ptyData[0]);
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -268,6 +128,8 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
+
+  autoReloadGitTree({ mainWindow });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
