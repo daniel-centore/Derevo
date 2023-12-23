@@ -1,5 +1,5 @@
-import { Point, TreeCommit, TreeData } from '../types/types';
-import { CIRCLE_RADIUS, LINE_THICKNESS } from './consts';
+import { TreeCommit, TreeData } from '../types/types';
+import { EntryWrapper } from './EntryWrapper';
 
 export const Commit = ({
   commit,
@@ -24,78 +24,20 @@ export const Commit = ({
   if (isRebase) {
     circleColor = 'red';
   }
-  // {
-  //   /* <circle
-  //       cx={loc.x}
-  //       cy={loc.y}
-  //       r={CIRCLE_RADIUS}
-  //       fill={circleColor}
-  //       cursor={rebase || treeData.dirty ? 'default' : 'pointer'}
-  //       onClick={async () => {
-  //         if (rebase || treeData.dirty) {
-  //           return;
-  //         }
-  //         const ref = meta.branches[0] || meta.oid;
-  //         await window.electron.api.runCommands([
-  //           `git -c advice.detachedHead=false checkout ${ref}`,
-  //         ]);
-  //       }}
-  //     /> */
-  // }
-  // {
-  //   /* TODO: Max width based on something else? */
-  // }
-  // {
-  //   /* <foreignObject x={loc.x + 20} y={loc.y - CIRCLE_RADIUS * 2} width="1000" height="30"> */
-  // }
   return (
-    <div
-      style={{
-        // paddingTop: '1px',
-        height: '40px',
-        // paddingLeft: '30px',
-        // marginLeft: '-20px',
-        flexBasis: '100%',
-        display: 'flex',
+    <EntryWrapper
+      circleColor={circleColor}
+      disablePointer={!!rebase || treeData.dirty}
+      onClick={async () => {
+        if (rebase || treeData.dirty) {
+          return;
+        }
+        const ref = meta.branches[0] || meta.oid;
+        await window.electron.api.runCommands([
+          `git -c advice.detachedHead=false checkout ${ref}`,
+        ]);
       }}
     >
-      {/* <div
-        style={{
-          borderLeftWidth: `${LINE_THICKNESS}px`,
-          borderColor: isRebase ? 'red' : 'grey',
-          // borderColor: 'red',
-          borderLeftStyle: 'solid',
-          // border: `0 solid ${isRebase ? 'red' : 'grey'}`,
-          // marginLeft: `${-LINE_THICKNESS / 2}px`,
-        }}
-      /> */}
-      <svg
-        width={CIRCLE_RADIUS * 2}
-        height={CIRCLE_RADIUS * 2}
-        xmlns="http://www.w3.org/2000/svg"
-        style={{
-          marginLeft: -CIRCLE_RADIUS - LINE_THICKNESS / 2,
-          marginTop: '10px',
-        }}
-      >
-        {/* <path d="M12,22 L12,36" stroke-width="2px" class="stroke-neutral-750 dark:stroke-neutral-500 border-neutral-750 dark:border-neutral-500 text-neutral-750 dark:text-neutral-400 fill-transparent" fill="transparent" stroke-dasharray="0"></path><circle cx="12" cy="18" r="4" class="stroke-neutral-750 dark:stroke-neutral-500 border-neutral-750 dark:border-neutral-500 text-neutral-750 dark:text-neutral-400 fill-transparent" stroke-width="2" stroke-dasharray="0"></circle> */}
-        <circle
-          cx={CIRCLE_RADIUS}
-          cy={CIRCLE_RADIUS}
-          r={CIRCLE_RADIUS}
-          fill={circleColor}
-          cursor={rebase || treeData.dirty ? 'default' : 'pointer'}
-          onClick={async () => {
-            if (rebase || treeData.dirty) {
-              return;
-            }
-            const ref = meta.branches[0] || meta.oid;
-            await window.electron.api.runCommands([
-              `git -c advice.detachedHead=false checkout ${ref}`,
-            ]);
-          }}
-        />
-      </svg>
       <div
         style={{
           fontSize: '14px',
@@ -162,6 +104,6 @@ export const Commit = ({
           <button type="button">Uncommit</button>
         )}
       </div>
-    </div>
+    </EntryWrapper>
   );
 };

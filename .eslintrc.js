@@ -23,6 +23,7 @@ module.exports = {
     'prefer-destructuring': 'off',
     'no-continue': 'off',
     'no-await-in-loop': 'warn',
+    'react/require-default-props': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

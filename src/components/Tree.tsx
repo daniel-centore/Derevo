@@ -227,7 +227,7 @@ const BranchOff = ({ stroke }: { stroke: string }) => {
 
 type TreeChunkType = {
   entry: TreeEntry;
-  // mainDescendant: TreeEntry | undefined;
+  mainDescendant: TreeEntry | undefined;
   branchSplits: TreeEntry[];
   isRebasing: boolean;
 };
@@ -267,7 +267,7 @@ const toEntries = ({
     if (entry.type !== 'commit') {
       entries.push({
         entry,
-        // mainDescendant: undefined,
+        mainDescendant: undefined,
         branchSplits: [],
         isRebasing,
       });
@@ -297,7 +297,7 @@ const toEntries = ({
 
     entries.push({
       entry,
-      // mainDescendant,
+      mainDescendant,
       branchSplits,
       isRebasing,
     });
@@ -361,6 +361,9 @@ const TreeEntryChunkMainRow = ({
       />
     );
   }
+  if (entry.entry.type === 'rebase') {
+    return <Rebase treeRebase={entry.entry} />
+  }
   return <div>TODO: Replace me</div>;
 };
 
@@ -401,6 +404,7 @@ const TreeEntryChunk = ({
       isRebasing={isRebasing}
     />
   );
+  const hideTip = !entry.mainDescendant;
   return (
     <div style={{ display: 'flex' }}>
       <div
@@ -409,6 +413,7 @@ const TreeEntryChunk = ({
           borderColor: isRebasing ? 'red' : 'grey',
           // borderColor: 'red',
           borderLeftStyle: 'solid',
+          marginTop: hideTip ? 10 : 0,
           // border: `0 solid ${isRebasing ? 'red' : 'grey'}`,
           // borderLeftWidth: `${LINE_THICKNESS}px`,
 
