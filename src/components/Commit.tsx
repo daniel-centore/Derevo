@@ -51,7 +51,7 @@ export const Commit = ({
   return (
     <div
       style={{
-        paddingTop: '1px',
+        // paddingTop: '1px',
         height: '45px',
         // paddingLeft: '30px',
         // marginLeft: '-20px',

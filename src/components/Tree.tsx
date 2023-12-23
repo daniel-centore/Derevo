@@ -34,21 +34,37 @@ const Line = ({
   );
 };
 
-const COMMIT_HEIGHT = 40;
-const BRANCH_EXTRA_Y_OFFSET = 15;
+// const COMMIT_HEIGHT = 40;
+// const BRANCH_EXTRA_Y_OFFSET = 15;
 const BRANCH_X_OFFSET = 30;
 const BRANCH_OFF_HEIGHT = 40;
 
-const BranchOff = ({ to, stroke }: { to: Point; stroke: string }) => {
+const BranchOff = ({ stroke }: { stroke: string }) => {
+  const to: Point = { x: BRANCH_X_OFFSET + 1, y: 0 };
   return (
-    <path
-      d={`M${to.x} ${to.y} C ${to.x} ${to.y + BRANCH_OFF_HEIGHT}, ${
-        to.x - BRANCH_X_OFFSET
-      } ${to.y}, ${to.x - BRANCH_X_OFFSET} ${to.y + 50}`}
-      strokeWidth="2px"
-      fill="transparent"
-      stroke={stroke}
-    />
+    <svg
+      width={BRANCH_X_OFFSET + 2}
+      height={BRANCH_OFF_HEIGHT}
+      xmlns="http://www.w3.org/2000/svg"
+      // style={{
+      //   marginLeft: -CIRCLE_RADIUS - (LINE_THICKNESS / 2),
+      //   marginTop: 5,
+      // }}
+      style={{
+        position: 'absolute',
+        bottom: -40,
+        left: 0,
+      }}
+    >
+      <path
+        d={`M${to.x} ${to.y} C ${to.x} ${to.y + BRANCH_OFF_HEIGHT}, ${
+          to.x - BRANCH_X_OFFSET
+        } ${to.y}, ${to.x - BRANCH_X_OFFSET - 3} ${to.y + 50}`}
+        strokeWidth={`${LINE_THICKNESS}px`}
+        fill="transparent"
+        stroke={stroke}
+      />
+    </svg>
   );
 };
 
@@ -300,7 +316,7 @@ const TreeEntryBranches = ({
       />,
     );
   }
-  return <div style={{ marginLeft: '10px' }}>{branchChunks}</div>;
+  return <div style={{ marginLeft: '0px' }}>{branchChunks}</div>;
 };
 
 const TreeEntryChunkMainRow = ({
@@ -421,13 +437,14 @@ const TreeChunk = ({
         marginBottom: `${MARGIN_BRANCH_BOTTOM_EMPTY}px`,
         marginTop: `${MARGIN_BRANCH_TOP_EMPTY}px`,
         display: 'flex',
+        position: 'relative',
       }}
     >
       <div
         style={{
-          border: '0 solid white',
+          border: '0 solid grey',
           borderLeftWidth: `${LINE_THICKNESS}px`,
-          marginLeft: '20px',
+          marginLeft: `${BRANCH_X_OFFSET}px`,
         }}
       />
       <div
@@ -438,6 +455,7 @@ const TreeChunk = ({
       >
         {entryChunks}
       </div>
+      <BranchOff stroke="grey" />
     </div>
   );
 };
