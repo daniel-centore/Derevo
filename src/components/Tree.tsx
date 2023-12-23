@@ -413,7 +413,7 @@ const TreeEntryChunk = ({
           borderColor: isRebasing ? 'red' : 'grey',
           // borderColor: 'red',
           borderLeftStyle: 'solid',
-          marginTop: hideTip ? 10 : 0,
+          marginTop: hideTip ? 15 : 0,
           // border: `0 solid ${isRebasing ? 'red' : 'grey'}`,
           // borderLeftWidth: `${LINE_THICKNESS}px`,
 
@@ -428,16 +428,18 @@ const TreeEntryChunk = ({
   );
 };
 
+// TODO: Rename these and fix documentation
+
 /**
  * Adjusts empty space beneath branches, where the line is not extended
  */
-const MARGIN_BRANCH_BOTTOM_EMPTY = 40;
+const MARGIN_BRANCH_BOTTOM_EMPTY = 30;
 /**
  * Adjusts the margin which controls how long the line tail is
  */
 const MARGIN_BRANCH_BOTTOM_LINE = 0;
 
-const MARGIN_BRANCH_TOP_EMPTY = 10;
+const MARGIN_BRANCH_TOP_EMPTY = 20;
 
 const MARGIN_BRANCH_TOP_LINE = -10;
 
