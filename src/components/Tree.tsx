@@ -1,10 +1,11 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useAsync } from 'react-async';
-import { head } from 'lodash';
+import { head, set } from 'lodash';
 import { Point, TreeCommit, TreeData, TreeEntry } from '../types/types';
 import { Commit } from './Commit';
 import { Rebase } from './Rebase';
 import { getModified } from './Modified';
+import { LINE_THICKNESS } from './consts';
 
 type TreeChunkData = {
   components: ReactNode[];
@@ -51,165 +52,398 @@ const BranchOff = ({ to, stroke }: { to: Point; stroke: string }) => {
   );
 };
 
-const createTreeChunk = ({
+// const createTreeChunk = ({
+//   root,
+//   treeData,
+//   chunkLoc,
+//   rebase,
+//   setRebase,
+//   isRebase,
+// }: {
+//   root: TreeEntry;
+//   treeData: TreeData;
+//   chunkLoc: Point;
+//   rebase: string | undefined;
+//   setRebase: (oid: string | undefined) => void;
+//   isRebase: boolean;
+// }): TreeChunkData => {
+//   const components: ReactNode[] = [];
+//   const lines: ReactNode[] = [];
+//   let yOffset = 0;
+//   let lastLoc: Point | null = null;
+
+//   let entry: TreeEntry | null = root;
+//   let isRebaseTemp = isRebase;
+//   while (entry) {
+//     // TODO: Base hiding unimportant commits on this
+//     // if (
+//     //     commit.metadata.mainBranch &&
+//     //     !commit.metadata.active &&
+//     //     commit.branchSplits.length === 1
+//     // ) {
+//     //     commit = head(commit.branchSplits) ?? null;
+//     //     continue;
+//     // }
+//     const loc: Point = { x: chunkLoc.x, y: chunkLoc.y + yOffset };
+//     isRebaseTemp =
+//       isRebaseTemp ||
+//       (entry.type === 'commit' && entry.metadata.oid === rebase);
+//     if (lastLoc) {
+//       lines.push(
+//         <Line
+//           locA={loc}
+//           locB={lastLoc}
+//           stroke={isRebaseTemp ? 'red' : 'grey'}
+//         />,
+//       );
+//     }
+//     if (entry.type === 'rebase') {
+//       components.push(
+//         <Rebase loc={loc} treeData={treeData} treeRebase={entry} />,
+//       );
+
+//       entry = null;
+//       yOffset -= 200; // TODO: Correct amount
+//     } else if (entry.type === 'modified') {
+//       const { height, component } = getModified({ loc, treeData, entry });
+//       components.push(component);
+
+//       entry = null;
+//       yOffset -= height; // TODO: Correct amount
+//     } else if (entry.type === 'commit') {
+//       components.push(
+//         <Commit
+//           commit={entry}
+//           treeData={treeData}
+//           loc={loc}
+//           isRebase={isRebaseTemp}
+//           rebase={rebase}
+//           setRebase={setRebase} // TODO: Disable?
+//         />,
+//       );
+
+//       // Consistent branch sorting order, with main on left side and older branches
+//       // further left
+//       // TODO: Update sorting to prefer being based on when the oid was first
+//       // seen by Derevo (so rebases always end up further right)
+//       entry.branchSplits.sort((a, b) => {
+//         if (a.type !== 'commit' || b.type !== 'commit') {
+//           return a.type < b.type ? -1 : 1;
+//         }
+//         if (a.metadata.mainBranch) {
+//           return -1;
+//         }
+//         if (b.metadata.mainBranch) {
+//           return 1;
+//         }
+//         return a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
+//       });
+
+//       const branchSplits: TreeEntry[] = [...entry.branchSplits];
+//       let mainDescendent: TreeEntry | undefined;
+//       // This if statement handles making sure that any branches off of the
+//       // tip of main appear as branches, not continuations of main
+//       const tipBranchSplits = head(entry.branchSplits);
+//       if (
+//         branchSplits.length > 0 &&
+//         (!entry.metadata.mainBranch ||
+//           (entry.metadata.mainBranch &&
+//             tipBranchSplits?.type === 'commit' &&
+//             tipBranchSplits?.metadata.mainBranch))
+//       ) {
+//         mainDescendent = branchSplits.shift();
+//       }
+//       branchSplits.reverse();
+
+//       for (let i = 0; i < branchSplits.length; i++) {
+//         const split = branchSplits[i];
+//         const branchSplitToLoc = {
+//           x: chunkLoc.x + BRANCH_X_OFFSET,
+//           y: chunkLoc.y + yOffset - COMMIT_HEIGHT - BRANCH_EXTRA_Y_OFFSET,
+//         };
+//         const branchIsRebase =
+//           isRebaseTemp ||
+//           (split.type === 'commit' && split.metadata.oid === rebase);
+//         const chunk = createTreeChunk({
+//           root: split,
+//           treeData,
+//           chunkLoc: branchSplitToLoc,
+//           rebase,
+//           setRebase,
+//           isRebase: branchIsRebase,
+//         });
+//         yOffset -= BRANCH_EXTRA_Y_OFFSET;
+
+//         lines.push(
+//           <BranchOff
+//             to={branchSplitToLoc}
+//             stroke={branchIsRebase ? 'red' : 'grey'}
+//           />,
+//         );
+//         lines.push(...chunk.lines);
+//         components.push(...chunk.components);
+//         yOffset -= chunk.height;
+//       }
+
+//       if (entry.metadata.mainBranch && !mainDescendent) {
+//         // This is for the final line of main, extending through the top of the page
+//         const topLocation = {
+//           x: chunkLoc.x,
+//           y: chunkLoc.y + yOffset - 10,
+//         };
+
+//         lines.push(<Line locA={loc} locB={topLocation} stroke="grey" />);
+//       }
+
+//       entry = mainDescendent ?? null;
+//       yOffset -= COMMIT_HEIGHT;
+//     }
+
+//     lastLoc = loc;
+//   }
+
+//   return {
+//     lines,
+//     components,
+//     height: -yOffset,
+//   };
+// };
+
+type TreeChunkType = {
+  entry: TreeEntry;
+  mainDescendant: TreeEntry | undefined;
+  branchSplits: TreeEntry[];
+};
+
+const sortBranches = (branchSplits: TreeEntry[]) => {
+  // Consistent branch sorting order, with main on left side and older branches
+  // further left
+  // TODO: Update sorting to prefer being based on when the oid was first
+  // seen by Derevo (so rebases always end up further right)
+  branchSplits.sort((a, b) => {
+    if (a.type !== 'commit' || b.type !== 'commit') {
+      return a.type < b.type ? -1 : 1;
+    }
+    if (a.metadata.mainBranch) {
+      return -1;
+    }
+    if (b.metadata.mainBranch) {
+      return 1;
+    }
+    return a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
+  });
+};
+
+const toEntries = (root: TreeEntry) => {
+  const entries: TreeChunkType[] = [];
+  let entry: TreeEntry | undefined = root;
+  while (entry) {
+    if (entry.type !== 'commit') {
+      entries.push({
+        entry,
+        mainDescendant: undefined,
+        branchSplits: [],
+      });
+      break;
+    }
+
+    const branchSplits: TreeEntry[] = [...entry.branchSplits];
+    sortBranches(branchSplits);
+    let mainDescendant: TreeEntry | undefined;
+    // This if statement handles making sure that any branches off of the
+    // tip of main appear as branches, not continuations of main
+    const tipBranchSplits = head(entry.branchSplits);
+    if (
+      branchSplits.length > 0 &&
+      (!entry.metadata.mainBranch ||
+        (entry.metadata.mainBranch &&
+          tipBranchSplits?.type === 'commit' &&
+          tipBranchSplits?.metadata.mainBranch))
+    ) {
+      mainDescendant = branchSplits.shift();
+    }
+    // branchSplits.reverse();
+
+    entries.push({
+      entry,
+      mainDescendant,
+      branchSplits,
+    });
+    entry = mainDescendant;
+  }
+
+  entries.reverse();
+  return entries;
+};
+
+const TreeEntryBranches = ({
+  entry,
+  treeData,
+  rebase,
+  setRebase,
+}: {
+  entry: TreeChunkType;
+  treeData: TreeData;
+  rebase: string | undefined;
+  setRebase: (oid: string | undefined) => void;
+}) => {
+  const branchChunks: ReactNode[] = [];
+  for (const branch of entry.branchSplits) {
+    branchChunks.push(
+      // eslint-disable-next-line no-use-before-define
+      <TreeChunk
+        root={branch}
+        treeData={treeData}
+        rebase={rebase}
+        setRebase={setRebase}
+        isRebase={false} // TODO: Populate
+      />,
+    );
+  }
+  return <div style={{ marginLeft: '10px' }}>{branchChunks}</div>;
+};
+
+const TreeEntryChunkMainRow = ({
+  entry,
+  treeData,
+  rebase,
+  setRebase,
+}: {
+  entry: TreeChunkType;
+  treeData: TreeData;
+  rebase: string | undefined;
+  setRebase: (oid: string | undefined) => void;
+}) => {
+  if (entry.entry.type === 'commit') {
+    return (
+      <Commit
+        commit={entry.entry}
+        treeData={treeData}
+        isRebase={false /* isRebaseTemp */} // TODO: Fix
+        rebase={rebase}
+        setRebase={setRebase} // TODO: Disable?
+      />
+    );
+  }
+  return <div>TODO: Replace me</div>;
+};
+
+const TreeEntryChunk = ({
+  entry,
+  treeData,
+  rebase,
+  setRebase,
+}: {
+  entry: TreeChunkType;
+  treeData: TreeData;
+  rebase: string | undefined;
+  setRebase: (oid: string | undefined) => void;
+}) => {
+  const mainRow = (
+    <TreeEntryChunkMainRow
+      entry={entry}
+      treeData={treeData}
+      rebase={rebase}
+      setRebase={setRebase}
+    />
+  );
+  const branches = (
+    <TreeEntryBranches
+      entry={entry}
+      treeData={treeData}
+      rebase={rebase}
+      setRebase={setRebase}
+    />
+  );
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+      {/* <div
+        style={{
+          border: '0 solid white',
+          borderLeftWidth: '2px',
+          marginLeft: '15px',
+        }}
+      /> */}
+      {branches}
+      {mainRow}
+    </div>
+  );
+};
+
+/**
+ * Adjusts empty space beneath branches, where the line is not extended
+ */
+const MARGIN_BRANCH_BOTTOM_EMPTY = 50;
+/**
+ * Adjusts the margin which controls how long the line tail is
+ */
+const MARGIN_BRANCH_BOTTOM_LINE = 0;
+
+const MARGIN_BRANCH_TOP_EMPTY = 10;
+
+const MARGIN_BRANCH_TOP_LINE = -10;
+
+const TreeChunk = ({
   root,
   treeData,
-  chunkLoc,
   rebase,
   setRebase,
   isRebase,
 }: {
   root: TreeEntry;
   treeData: TreeData;
-  chunkLoc: Point;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
   isRebase: boolean;
-}): TreeChunkData => {
-  const components: ReactNode[] = [];
-  const lines: ReactNode[] = [];
-  let yOffset = 0;
-  let lastLoc: Point | null = null;
+}) => {
+  const entryChunks: ReactNode[] = [];
+  // const lines: ReactNode[] = [];
+  // let yOffset = 0;
+  // let lastLoc: Point | null = null;
 
-  let entry: TreeEntry | null = root;
-  let isRebaseTemp = isRebase;
-  while (entry) {
-    // TODO: Base hiding unimportant commits on this
-    // if (
-    //     commit.metadata.mainBranch &&
-    //     !commit.metadata.active &&
-    //     commit.branchSplits.length === 1
-    // ) {
-    //     commit = head(commit.branchSplits) ?? null;
-    //     continue;
-    // }
-    const loc: Point = { x: chunkLoc.x, y: chunkLoc.y + yOffset };
-    isRebaseTemp =
-      isRebaseTemp ||
-      (entry.type === 'commit' && entry.metadata.oid === rebase);
-    if (lastLoc) {
-      lines.push(
-        <Line
-          locA={loc}
-          locB={lastLoc}
-          stroke={isRebaseTemp ? 'red' : 'grey'}
-        />,
-      );
-    }
-    if (entry.type === 'rebase') {
-      components.push(
-        <Rebase loc={loc} treeData={treeData} treeRebase={entry} />,
-      );
+  // let entry: TreeEntry | null = root;
+  // let isRebaseTemp = isRebase;
 
-      entry = null;
-      yOffset -= 200; // TODO: Correct amount
-    } else if (entry.type === 'modified') {
-      const { height, component } = getModified({ loc, treeData, entry });
-      components.push(component);
-
-      entry = null;
-      yOffset -= height; // TODO: Correct amount
-    } else if (entry.type === 'commit') {
-      components.push(
-        <Commit
-          commit={entry}
-          treeData={treeData}
-          loc={loc}
-          isRebase={isRebaseTemp}
-          rebase={rebase}
-          setRebase={setRebase} // TODO: Disable?
-        />,
-      );
-
-      // Consistent branch sorting order, with main on left side and older branches
-      // further left
-      // TODO: Update sorting to prefer being based on when the oid was first
-      // seen by Derevo (so rebases always end up further right)
-      entry.branchSplits.sort((a, b) => {
-        if (a.type !== 'commit' || b.type !== 'commit') {
-          return a.type < b.type ? -1 : 1;
-        }
-        if (a.metadata.mainBranch) {
-          return -1;
-        }
-        if (b.metadata.mainBranch) {
-          return 1;
-        }
-        return a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
-      });
-
-      const branchSplits: TreeEntry[] = [...entry.branchSplits];
-      let mainDescendent: TreeEntry | undefined;
-      // This if statement handles making sure that any branches off of the
-      // tip of main appear as branches, not continuations of main
-      const tipBranchSplits = head(entry.branchSplits);
-      if (
-        branchSplits.length > 0 &&
-        (!entry.metadata.mainBranch ||
-          (entry.metadata.mainBranch &&
-            tipBranchSplits?.type === 'commit' &&
-            tipBranchSplits?.metadata.mainBranch))
-      ) {
-        mainDescendent = branchSplits.shift();
-      }
-      branchSplits.reverse();
-
-      for (let i = 0; i < branchSplits.length; i++) {
-        const split = branchSplits[i];
-        const branchSplitToLoc = {
-          x: chunkLoc.x + BRANCH_X_OFFSET,
-          y: chunkLoc.y + yOffset - COMMIT_HEIGHT - BRANCH_EXTRA_Y_OFFSET,
-        };
-        const branchIsRebase =
-          isRebaseTemp ||
-          (split.type === 'commit' && split.metadata.oid === rebase);
-        const chunk = createTreeChunk({
-          root: split,
-          treeData,
-          chunkLoc: branchSplitToLoc,
-          rebase,
-          setRebase,
-          isRebase: branchIsRebase,
-        });
-        yOffset -= BRANCH_EXTRA_Y_OFFSET;
-
-        lines.push(
-          <BranchOff
-            to={branchSplitToLoc}
-            stroke={branchIsRebase ? 'red' : 'grey'}
-          />,
-        );
-        lines.push(...chunk.lines);
-        components.push(...chunk.components);
-        yOffset -= chunk.height;
-      }
-
-      if (entry.metadata.mainBranch && !mainDescendent) {
-        // This is for the final line of main, extending through the top of the page
-        const topLocation = {
-          x: chunkLoc.x,
-          y: chunkLoc.y + yOffset - 10,
-        };
-
-        lines.push(<Line locA={loc} locB={topLocation} stroke="grey" />);
-      }
-
-      entry = mainDescendent ?? null;
-      yOffset -= COMMIT_HEIGHT;
-    }
-
-    lastLoc = loc;
+  for (const entry of toEntries(root)) {
+    entryChunks.push(
+      <TreeEntryChunk
+        entry={entry}
+        treeData={treeData}
+        rebase={rebase}
+        setRebase={setRebase}
+      />,
+    );
   }
 
-  return {
-    lines,
-    components,
-    height: -yOffset,
-  };
+  return (
+    <div
+      style={{
+        marginBottom: `${MARGIN_BRANCH_BOTTOM_EMPTY}px`,
+        marginTop: `${MARGIN_BRANCH_TOP_EMPTY}px`,
+        display: 'flex',
+      }}
+    >
+      <div
+        style={{
+          border: '0 solid white',
+          borderLeftWidth: `${LINE_THICKNESS}px`,
+          marginLeft: '20px',
+        }}
+      />
+      <div
+        style={{
+          marginBottom: `${MARGIN_BRANCH_BOTTOM_LINE}px`,
+          marginTop: `${MARGIN_BRANCH_TOP_LINE}px`,
+        }}
+      >
+        {entryChunks}
+      </div>
+    </div>
+  );
 };
 
-const HEIGHT_OFFSET = COMMIT_HEIGHT / 2;
-const WIDTH = 900; // TODO: Can we do better?
+// const HEIGHT_OFFSET = COMMIT_HEIGHT / 2;
+// const WIDTH = 900; // TODO: Can we do better?
 
 export const Tree = () => {
   const [treeData, setTreeData] = useState<TreeData>();
@@ -235,17 +469,28 @@ export const Tree = () => {
   if (!treeData?.rootCommit) {
     return <p>No data</p>;
   }
-  const chunk = createTreeChunk({
-    root: treeData.rootCommit,
-    treeData,
-    chunkLoc: { x: 20, y: 0 },
-    rebase,
-    setRebase,
-    isRebase: false,
-  });
+  // const chunk = createTreeChunk({
+  //   root: treeData.rootCommit,
+  //   treeData,
+  //   chunkLoc: { x: 20, y: 0 },
+  //   rebase,
+  //   setRebase,
+  //   isRebase: false,
+  // });
+
+  // const chunks: ReactNode[] = [];
+
+  // createTreeChunkNew({
+  //   root: treeData.rootCommit,
+  //   treeData,
+  //   rebase,
+  //   setRebase,
+  //   isRebase: false,
+  //   chunks,
+  // });
   return (
-    <div>
-      <svg
+    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+      {/* <svg
         xmlns="https://www.w3.org/2000/svg"
         viewBox={`0 -${chunk.height - HEIGHT_OFFSET} ${WIDTH} ${
           chunk.height + HEIGHT_OFFSET
@@ -255,7 +500,22 @@ export const Tree = () => {
       >
         {chunk.lines}
         {chunk.components}
-      </svg>
+      </svg> */}
+      {/* <div style={{ border: '0 solid white', borderLeftWidth: '2px', marginLeft: '-40px' }} /> */}
+      {/* <div
+        style={{
+          border: '0 solid white',
+          borderLeftWidth: '2px',
+          marginLeft: '15px',
+        }}
+      /> */}
+      <TreeChunk
+        root={treeData.rootCommit}
+        treeData={treeData}
+        rebase={rebase}
+        setRebase={setRebase}
+        isRebase={false}
+      />
     </div>
   );
 };
