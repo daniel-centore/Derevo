@@ -40,10 +40,10 @@ const BRANCH_X_OFFSET = 30;
 const BRANCH_OFF_HEIGHT = 40;
 
 const BranchOff = ({ stroke }: { stroke: string }) => {
-  const to: Point = { x: BRANCH_X_OFFSET + 1, y: 0 };
+  const to: Point = { x: BRANCH_X_OFFSET + LINE_THICKNESS / 2, y: 0 };
   return (
     <svg
-      width={BRANCH_X_OFFSET + 2}
+      width={BRANCH_X_OFFSET + LINE_THICKNESS}
       height={BRANCH_OFF_HEIGHT}
       xmlns="http://www.w3.org/2000/svg"
       // style={{
@@ -59,7 +59,7 @@ const BranchOff = ({ stroke }: { stroke: string }) => {
       <path
         d={`M${to.x} ${to.y} C ${to.x} ${to.y + BRANCH_OFF_HEIGHT}, ${
           to.x - BRANCH_X_OFFSET
-        } ${to.y}, ${to.x - BRANCH_X_OFFSET - 3} ${to.y + 50}`}
+        } ${to.y}, ${to.x - BRANCH_X_OFFSET - LINE_THICKNESS * 2} ${to.y + 50}`}
         strokeWidth={`${LINE_THICKNESS}px`}
         fill="transparent"
         stroke={stroke}
@@ -227,8 +227,9 @@ const BranchOff = ({ stroke }: { stroke: string }) => {
 
 type TreeChunkType = {
   entry: TreeEntry;
-  mainDescendant: TreeEntry | undefined;
+  // mainDescendant: TreeEntry | undefined;
   branchSplits: TreeEntry[];
+  isRebasing: boolean;
 };
 
 const sortBranches = (branchSplits: TreeEntry[]) => {
@@ -250,17 +251,31 @@ const sortBranches = (branchSplits: TreeEntry[]) => {
   });
 };
 
-const toEntries = (root: TreeEntry) => {
+const toEntries = ({
+  root,
+  isRebasing: isRebasingRaw,
+  rebase,
+}: {
+  root: TreeEntry;
+  isRebasing: boolean;
+  rebase: string | undefined;
+}) => {
   const entries: TreeChunkType[] = [];
   let entry: TreeEntry | undefined = root;
+  let isRebasing = isRebasingRaw;
   while (entry) {
     if (entry.type !== 'commit') {
       entries.push({
         entry,
-        mainDescendant: undefined,
+        // mainDescendant: undefined,
         branchSplits: [],
+        isRebasing,
       });
       break;
+    }
+
+    if (rebase === entry.metadata.oid) {
+      isRebasing = true;
     }
 
     const branchSplits: TreeEntry[] = [...entry.branchSplits];
@@ -282,8 +297,9 @@ const toEntries = (root: TreeEntry) => {
 
     entries.push({
       entry,
-      mainDescendant,
+      // mainDescendant,
       branchSplits,
+      isRebasing,
     });
     entry = mainDescendant;
   }
@@ -297,11 +313,13 @@ const TreeEntryBranches = ({
   treeData,
   rebase,
   setRebase,
+  isRebasing,
 }: {
   entry: TreeChunkType;
   treeData: TreeData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
+  isRebasing: boolean;
 }) => {
   const branchChunks: ReactNode[] = [];
   for (const branch of entry.branchSplits) {
@@ -312,7 +330,7 @@ const TreeEntryBranches = ({
         treeData={treeData}
         rebase={rebase}
         setRebase={setRebase}
-        isRebase={false} // TODO: Populate
+        isRebasing={isRebasing}
       />,
     );
   }
@@ -324,18 +342,20 @@ const TreeEntryChunkMainRow = ({
   treeData,
   rebase,
   setRebase,
+  isRebasing,
 }: {
   entry: TreeChunkType;
   treeData: TreeData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
+  isRebasing: boolean;
 }) => {
   if (entry.entry.type === 'commit') {
     return (
       <Commit
         commit={entry.entry}
         treeData={treeData}
-        isRebase={false /* isRebaseTemp */} // TODO: Fix
+        isRebase={isRebasing} // TODO: Fix
         rebase={rebase}
         setRebase={setRebase} // TODO: Disable?
       />
@@ -349,18 +369,27 @@ const TreeEntryChunk = ({
   treeData,
   rebase,
   setRebase,
+  // isRebaseTemp,
+  isRebasing: isRebasingRaw,
 }: {
   entry: TreeChunkType;
   treeData: TreeData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
+  // isRebaseTemp: boolean;
+  isRebasing: boolean;
 }) => {
+  // TODO: Share this logic with the other instance
+  const isRebasing =
+    isRebasingRaw ||
+    (entry.entry.type === 'commit' && rebase === entry.entry.metadata.oid);
   const mainRow = (
     <TreeEntryChunkMainRow
       entry={entry}
       treeData={treeData}
       rebase={rebase}
       setRebase={setRebase}
+      isRebasing={isRebasing}
     />
   );
   const branches = (
@@ -369,19 +398,27 @@ const TreeEntryChunk = ({
       treeData={treeData}
       rebase={rebase}
       setRebase={setRebase}
+      isRebasing={isRebasing}
     />
   );
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-      {/* <div
+    <div style={{ display: 'flex' }}>
+      <div
         style={{
-          border: '0 solid white',
-          borderLeftWidth: '2px',
-          marginLeft: '15px',
+          borderLeftWidth: `${LINE_THICKNESS}px`,
+          borderColor: isRebasing ? 'red' : 'grey',
+          // borderColor: 'red',
+          borderLeftStyle: 'solid',
+          // border: `0 solid ${isRebasing ? 'red' : 'grey'}`,
+          // borderLeftWidth: `${LINE_THICKNESS}px`,
+
+          // marginLeft: `${-LINE_THICKNESS / 2}px`,
         }}
-      /> */}
-      {branches}
-      {mainRow}
+      />
+      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+        {branches}
+        {mainRow}
+      </div>
     </div>
   );
 };
@@ -389,7 +426,7 @@ const TreeEntryChunk = ({
 /**
  * Adjusts empty space beneath branches, where the line is not extended
  */
-const MARGIN_BRANCH_BOTTOM_EMPTY = 50;
+const MARGIN_BRANCH_BOTTOM_EMPTY = 40;
 /**
  * Adjusts the margin which controls how long the line tail is
  */
@@ -404,13 +441,13 @@ const TreeChunk = ({
   treeData,
   rebase,
   setRebase,
-  isRebase,
+  isRebasing: isRebasingRaw,
 }: {
   root: TreeEntry;
   treeData: TreeData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
-  isRebase: boolean;
+  isRebasing: boolean;
 }) => {
   const entryChunks: ReactNode[] = [];
   // const lines: ReactNode[] = [];
@@ -419,14 +456,21 @@ const TreeChunk = ({
 
   // let entry: TreeEntry | null = root;
   // let isRebaseTemp = isRebase;
+  const isRebasing =
+    isRebasingRaw || (root.type === 'commit' && rebase === root.metadata.oid);
 
-  for (const entry of toEntries(root)) {
+  for (const entry of toEntries({ root, isRebasing, rebase })) {
+    // if (entry.entry.type === 'commit' && entry.entry.metadata.oid === rebase) {
+    //   isRebaseTemp = true;
+    // }
     entryChunks.push(
       <TreeEntryChunk
         entry={entry}
         treeData={treeData}
         rebase={rebase}
         setRebase={setRebase}
+        isRebasing={entry.isRebasing}
+        // isRebaseTemp={isRebaseTemp}
       />,
     );
   }
@@ -442,8 +486,9 @@ const TreeChunk = ({
     >
       <div
         style={{
-          border: '0 solid grey',
-          borderLeftWidth: `${LINE_THICKNESS}px`,
+          // border: `0 solid ${isRebasing ? 'red' : 'grey'}`,
+          // borderLeftWidth: `${LINE_THICKNESS}px`,
+          // TODO: Move the margin above?
           marginLeft: `${BRANCH_X_OFFSET}px`,
         }}
       />
@@ -455,7 +500,7 @@ const TreeChunk = ({
       >
         {entryChunks}
       </div>
-      <BranchOff stroke="grey" />
+      <BranchOff stroke={isRebasing ? 'red' : 'grey'} />
     </div>
   );
 };
@@ -532,7 +577,7 @@ export const Tree = () => {
         treeData={treeData}
         rebase={rebase}
         setRebase={setRebase}
-        isRebase={false}
+        isRebasing={false}
       />
     </div>
   );

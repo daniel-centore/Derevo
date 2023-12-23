@@ -52,20 +52,30 @@ export const Commit = ({
     <div
       style={{
         // paddingTop: '1px',
-        height: '45px',
+        height: '40px',
         // paddingLeft: '30px',
         // marginLeft: '-20px',
         flexBasis: '100%',
         display: 'flex',
       }}
     >
+      {/* <div
+        style={{
+          borderLeftWidth: `${LINE_THICKNESS}px`,
+          borderColor: isRebase ? 'red' : 'grey',
+          // borderColor: 'red',
+          borderLeftStyle: 'solid',
+          // border: `0 solid ${isRebase ? 'red' : 'grey'}`,
+          // marginLeft: `${-LINE_THICKNESS / 2}px`,
+        }}
+      /> */}
       <svg
         width={CIRCLE_RADIUS * 2}
         height={CIRCLE_RADIUS * 2}
         xmlns="http://www.w3.org/2000/svg"
         style={{
-          marginLeft: -CIRCLE_RADIUS - (LINE_THICKNESS / 2),
-          marginTop: 5,
+          marginLeft: -CIRCLE_RADIUS - LINE_THICKNESS / 2,
+          marginTop: '10px',
         }}
       >
         {/* <path d="M12,22 L12,36" stroke-width="2px" class="stroke-neutral-750 dark:stroke-neutral-500 border-neutral-750 dark:border-neutral-500 text-neutral-750 dark:text-neutral-400 fill-transparent" fill="transparent" stroke-dasharray="0"></path><circle cx="12" cy="18" r="4" class="stroke-neutral-750 dark:stroke-neutral-500 border-neutral-750 dark:border-neutral-500 text-neutral-750 dark:text-neutral-400 fill-transparent" stroke-width="2" stroke-dasharray="0"></circle> */}
@@ -94,6 +104,7 @@ export const Commit = ({
           color: !meta.mainBranch || meta.active ? 'rgb(188 192 196)' : 'grey',
           fontWeight: meta.active ? 'bold' : 'normal',
           paddingLeft: '20px',
+          marginTop: '5px',
         }}
       >
         <span style={{ backgroundColor: 'grey', color: 'black' }}>
