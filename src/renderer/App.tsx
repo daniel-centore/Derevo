@@ -5,6 +5,7 @@ import {
   ButtonGroup,
   CssBaseline,
   CssVarsProvider,
+  Sheet,
   ThemeProvider,
   // createTheme,
   useColorScheme,
@@ -125,10 +126,10 @@ export default function App() {
           path="/"
           element={
             <CssVarsProvider defaultColorScheme="dark">
-            {/* <ThemeProvider theme={darkTheme}> */}
               <CssBaseline />
-              <Main />
-            {/* </ThemeProvider> */}
+              <Sheet>
+                <Main />
+              </Sheet>
             </CssVarsProvider>
           }
         />

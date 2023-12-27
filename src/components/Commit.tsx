@@ -177,6 +177,7 @@ export const Commit = (props: Props) => {
             const checkedOut = treeData.currentBranch === branch;
             return (
               <HasMenu
+              key={branch}
                 menuItems={[
                   {
                     label: 'Rebase',
@@ -196,7 +197,6 @@ export const Commit = (props: Props) => {
               >
                 <Chip
                   style={{ marginRight: '7px' }}
-                  key={branch}
                   variant={checkedOut ? 'solid' : 'outlined'}
                   color={checkedOut ? 'primary' : 'neutral'}
                   disabled={disableCheckout}
