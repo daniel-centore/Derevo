@@ -167,6 +167,10 @@ export const performRebase = async ({
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   const branchRenames: BranchRename[] = [];
   await performRebaseHelper({ from, to, branchRenames, mainWindow });
+
+  // This ends us at the originally selected commit
+  branchRenames.reverse();
+
   for (const { goalBranches, tempBranchName } of branchRenames) {
     for (const goalBranch of goalBranches) {
       // eslint-disable-next-line no-await-in-loop
