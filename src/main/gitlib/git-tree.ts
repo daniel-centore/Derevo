@@ -5,6 +5,7 @@ import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
 import { CommitMetadata, TreeCommit, TreeData } from '../../types/types';
 import { getModifiedFiles, rebaseInProgress } from './git-read';
+import { rebaseStatus } from './activity-status';
 
 const rawCommitToMeta = ({
   rawCommit,
@@ -21,7 +22,7 @@ const rawCommitToMeta = ({
   branches: branch ? [branch] : [],
   title: `${rawCommit.commit.message.split('\n')[0]}`,
   active: rawCommit.oid === activeCommit,
-  mainBranch,
+  onMainBranch: mainBranch,
   authorTs: new Date(rawCommit.commit.author.timestamp * 1000),
 });
 
@@ -192,6 +193,8 @@ export const extractGitTree = async (): Promise<TreeData> => {
     dirty,
     stashEntries,
     currentBranch: currentBranch ?? null,
+    mainBranch,
+    rebaseStatus: rebaseStatus(),
   };
 };
 

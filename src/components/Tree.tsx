@@ -87,10 +87,10 @@ const sortBranches = (branchSplits: TreeEntry[]) => {
     if (b.type !== 'commit') {
       return -1;
     }
-    if (a.metadata.mainBranch) {
+    if (a.metadata.onMainBranch) {
       return -1;
     }
-    if (b.metadata.mainBranch) {
+    if (b.metadata.onMainBranch) {
       return 1;
     }
     return a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
@@ -132,10 +132,10 @@ const toEntries = ({
     const tipBranchSplits = head(entry.branchSplits);
     if (
       branchSplits.length > 0 &&
-      (!entry.metadata.mainBranch ||
-        (entry.metadata.mainBranch &&
+      (!entry.metadata.onMainBranch ||
+        (entry.metadata.onMainBranch &&
           tipBranchSplits?.type === 'commit' &&
-          tipBranchSplits?.metadata.mainBranch))
+          tipBranchSplits?.metadata.onMainBranch))
     ) {
       mainDescendant = branchSplits.shift();
     }

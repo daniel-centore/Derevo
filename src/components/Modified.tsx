@@ -5,7 +5,7 @@ import { Point, TreeData, TreeModified } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { CIRCLE_RADIUS } from './consts';
 
-// TODO: Share with the other usage
+// TODO: Share with the other usages
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
 
 // TODO: Deleted files

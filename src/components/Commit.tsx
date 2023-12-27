@@ -1,7 +1,12 @@
-import { Button, ButtonGroup, Chip } from '@mui/joy';
+import { Button, ButtonGroup, Chip, MenuItem, MenuList } from '@mui/joy';
 import { ReactNode } from 'react';
+import { customAlphabet } from 'nanoid';
 import { TreeCommit, TreeData } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
+import { HasMenu } from './HasMenu';
+
+// TODO: Share with the other usages
+const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
 
 type Props = {
   commit: TreeCommit;
@@ -22,7 +27,13 @@ const getButtons = ({
 
   const buttons: ReactNode[] = [];
 
-  if (!treeData.dirty && meta.active && !meta.mainBranch && !rebase) {
+  if (
+    treeData.rebaseStatus === 'stopped' &&
+    !treeData.dirty &&
+    meta.active &&
+    !meta.onMainBranch &&
+    !rebase
+  ) {
     buttons.push(
       <Button
         // variant="outlined"
@@ -35,7 +46,11 @@ const getButtons = ({
     );
   }
 
-  if (!treeData.dirty && rebase === meta.oid) {
+  if (
+    treeData.rebaseStatus === 'stopped' &&
+    !treeData.dirty &&
+    rebase === meta.oid
+  ) {
     buttons.push(
       <Button
         variant="solid"
@@ -50,6 +65,7 @@ const getButtons = ({
   }
 
   if (
+    treeData.rebaseStatus === 'stopped' &&
     !treeData.dirty &&
     rebase &&
     !isRebase &&
@@ -59,7 +75,6 @@ const getButtons = ({
   ) {
     buttons.push(
       <Button
-        // variant="outlined"
         onClick={async () => {
           const fromRoot = treeData.commitMap[rebase];
           const toRoot = treeData.commitMap[meta.oid];
@@ -75,11 +90,21 @@ const getButtons = ({
     );
   }
 
-  if (!treeData.dirty && meta.active && !meta.mainBranch && !rebase) {
+  if (
+    treeData.rebaseStatus === 'stopped' &&
+    !treeData.dirty &&
+    meta.active &&
+    !meta.onMainBranch &&
+    !rebase
+  ) {
     buttons.push(<Button>Uncommit</Button>);
   }
 
-  if (treeData.stashEntries > 0 && meta.active) {
+  if (
+    treeData.rebaseStatus === 'stopped' &&
+    treeData.stashEntries > 0 &&
+    meta.active
+  ) {
     buttons.push(
       <Button
         onClick={() => {
@@ -126,7 +151,8 @@ export const Commit = (props: Props) => {
           fontSize: '14px',
           lineHeight: '32px', // Should be height of largest element
           margin: '0',
-          color: !meta.mainBranch || meta.active ? 'rgb(188 192 196)' : 'grey',
+          color:
+            !meta.onMainBranch || meta.active ? 'rgb(188 192 196)' : 'grey',
           fontWeight: meta.active ? 'bold' : 'normal',
           paddingLeft: '20px',
           marginTop: '2px',
@@ -136,24 +162,75 @@ export const Commit = (props: Props) => {
           meta.branches.map((branch) => {
             const checkedOut = treeData.currentBranch === branch;
             return (
-              <Chip
-                style={{ marginRight: '7px' }}
-                key={branch}
-                variant={checkedOut ? 'solid' : 'outlined'}
-                color={checkedOut ? 'primary' : 'neutral'}
-                onClick={() => {
-                  if (disableCheckout) {
-                    return;
-                  }
-                  window.electron.runCommands([
-                    `git -c advice.detachedHead=false checkout ${branch}`,
-                  ]);
-                }}
+              <HasMenu
+                menuItems={[
+                  {
+                    label: 'Rebase',
+                    disabled: meta.onMainBranch,
+                    onClick: () => {
+                      setRebase(meta.oid);
+                    },
+                  },
+                  {
+                    label: 'Delete Branch',
+                    disabled: checkedOut || treeData.mainBranch === branch,
+                    onClick: () => {
+                      window.electron.runCommands([`git branch -D ${branch}`]);
+                    },
+                  },
+                ]}
               >
-                {branch}
-              </Chip>
+                <Chip
+                  style={{ marginRight: '7px' }}
+                  key={branch}
+                  variant={checkedOut ? 'solid' : 'outlined'}
+                  color={checkedOut ? 'primary' : 'neutral'}
+                  disabled={disableCheckout}
+                  onClick={() => {
+                    if (disableCheckout) {
+                      return;
+                    }
+                    window.electron.runCommands([
+                      `git -c advice.detachedHead=false checkout ${branch}`,
+                    ]);
+                  }}
+                >
+                  {branch}
+                </Chip>
+              </HasMenu>
             );
           })}
+        {meta.branches.length === 0 && !meta.onMainBranch && (
+          <HasMenu
+            menuItems={[
+              {
+                label: 'Create branch',
+                onClick: () => {
+                  window.electron.runCommands([
+                    // `git -c advice.detachedHead=false checkout ${meta.oid}`,
+                    `git branch derevo-${nanoid()} ${meta.oid}`,
+                  ]);
+                },
+              },
+            ]}
+          >
+            <Chip
+              style={{ marginRight: '7px' }}
+              variant="solid"
+              color="danger"
+              onClick={() => {
+                if (disableCheckout) {
+                  return;
+                }
+                window.electron.runCommands([
+                  `git -c advice.detachedHead=false checkout ${meta.oid}`,
+                ]);
+              }}
+            >
+              No Branch
+            </Chip>
+          </HasMenu>
+        )}
         {/* <span style={{ backgroundColor: 'grey', color: 'black' }}>
           {meta.branches.length > 0 && `[${meta.branches.join(', ')}]`}
           {meta.branches.length === 0 && !meta.mainBranch && '[NO BRANCH]'}

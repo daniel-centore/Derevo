@@ -6,8 +6,8 @@ import { CIRCLE_RADIUS } from './consts';
 export const Rebase = ({
   // commit,
   treeRebase, // rebase,
-  // treeData,
-} // loc, // isRebase,
+  // loc, // isRebase,
+} // treeData,
 // setRebase,
 : {
   // commit: TreeCommit;
@@ -61,6 +61,15 @@ export const Rebase = ({
             Continue
           </Button>
         )}
+        <Button
+          variant="outlined"
+          style={{ marginTop: '7px' }}
+          onClick={async () => {
+            await window.electron.invoke('abort-rebase');
+          }}
+        >
+          Abort
+        </Button>
         {/* TODO: Abort button */}
       </div>
     </EntryWrapper>

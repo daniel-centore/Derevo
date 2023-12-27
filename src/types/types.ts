@@ -1,9 +1,11 @@
+export type RebaseStatus = 'in-progress' | 'cancel-requested' | 'stopped';
+
 export type CommitMetadata = {
   oid: string;
   title: string;
   active: boolean;
   branches: string[];
-  mainBranch: boolean;
+  onMainBranch: boolean;
   authorTs: Date;
 };
 
@@ -33,6 +35,8 @@ export type TreeData = {
   dirty: boolean;
   stashEntries: number;
   currentBranch: string | null;
+  mainBranch: string;
+  rebaseStatus: RebaseStatus;
 };
 
 export type Point = {

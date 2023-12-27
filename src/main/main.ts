@@ -20,7 +20,12 @@ import {
   extractGitTree,
   reloadGitTree,
 } from './gitlib/git-tree';
-import { performRebase, spawn, terminalIn } from './gitlib/git-write';
+import {
+  abortRebase,
+  performRebase,
+  spawn,
+  terminalIn,
+} from './gitlib/git-write';
 import { TreeCommit } from '../types/types';
 
 class AppUpdater {
@@ -64,6 +69,14 @@ ipcMain.handle('rebase', async (_, data) => {
   const { from, to }: { from: TreeCommit; to: string } = data;
 
   await performRebase({ from, to, mainWindow });
+});
+
+ipcMain.handle('abort-rebase', async () => {
+  if (!mainWindow) {
+    return;
+  }
+
+  await abortRebase({ mainWindow });
 });
 
 ipcMain.handle('terminal-in', (_event, ptyData) => {

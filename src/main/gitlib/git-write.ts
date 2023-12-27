@@ -5,12 +5,15 @@ import { BrowserWindow, ipcMain } from 'electron';
 import * as pty from 'node-pty';
 import os from 'os';
 import { customAlphabet } from 'nanoid';
-import { TreeCommit } from '../../types/types';
+import git from 'isomorphic-git';
+import { RebaseStatus, TreeCommit } from '../../types/types';
 import { extractGitTree, reloadGitTree } from './git-tree';
 import { sleep } from '../util';
 import { rebaseInProgress } from './git-read';
+import { rebaseStatus, setRebaseStatus } from './activity-status';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
+const TEMP_BRANCH_PREFIX = 'derevo-tmp/';
 
 export const commit = () => {
   // git checkout -b testing-branch
@@ -95,6 +98,36 @@ type BranchRename = {
   goalBranches: string[];
 };
 
+export const abortRebase = async ({
+  mainWindow,
+}: {
+  mainWindow: BrowserWindow;
+}) => {
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+
+  setRebaseStatus('cancel-requested');
+
+  await spawn({ cmd: 'git rebase --abort', dir, mainWindow });
+
+  // Delete any tmp branches around
+  const branches = await git.listBranches({ fs, dir });
+  const branchesToDelete = branches.filter((branch) =>
+    branch.startsWith(TEMP_BRANCH_PREFIX),
+  );
+  if (branchesToDelete.length > 0) {
+    await spawn({
+      cmd: 'git checkout head',
+      dir,
+      mainWindow,
+    });
+    await spawn({
+      cmd: `git branch -D ${branchesToDelete.join(' ')}`,
+      dir,
+      mainWindow,
+    });
+  }
+};
+
 const performRebaseHelper = async ({
   from,
   to,
@@ -106,10 +139,14 @@ const performRebaseHelper = async ({
   branchRenames: BranchRename[];
   mainWindow: BrowserWindow;
 }) => {
+  if (rebaseStatus() === 'cancel-requested') {
+    return;
+  }
+
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   // TODO: Handle situation when a commit in the graph has no branch
   // TODO: Handle situation when a commit has multiple branches
-  const tempBranchName = `derevo-tmp/${nanoid()}`;
+  const tempBranchName = `${TEMP_BRANCH_PREFIX}${nanoid()}`;
   await spawn({
     cmd: `git branch --no-track ${tempBranchName} ${from.metadata.oid}`,
     dir,
@@ -130,6 +167,10 @@ const performRebaseHelper = async ({
   if (returnValue !== 0) {
     let waitingForRebaseComplete = true;
     while (waitingForRebaseComplete) {
+      if (rebaseStatus() === 'cancel-requested') {
+        return;
+      }
+
       const rebasing = await rebaseInProgress(dir);
       if (!rebasing) {
         waitingForRebaseComplete = false;
@@ -139,9 +180,16 @@ const performRebaseHelper = async ({
     }
   }
 
+  if (rebaseStatus() === 'cancel-requested') {
+    return;
+  }
+
   await reloadGitTree({ mainWindow });
 
   for (const split of from.branchSplits) {
+    if (rebaseStatus() === 'cancel-requested') {
+      return;
+    }
     if (split.type !== 'commit') {
       continue;
     }
@@ -164,9 +212,15 @@ export const performRebase = async ({
   from: TreeCommit;
   to: string;
 }) => {
+  setRebaseStatus('in-progress');
+
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   const branchRenames: BranchRename[] = [];
   await performRebaseHelper({ from, to, branchRenames, mainWindow });
+
+  if (rebaseStatus() === 'cancel-requested') {
+    return;
+  }
 
   // This ends us at the originally selected commit
   branchRenames.reverse();
@@ -198,6 +252,8 @@ export const performRebase = async ({
     }
   }
   await reloadGitTree({ mainWindow });
+
+  setRebaseStatus('stopped');
 };
 
 export const terminalIn = (str: string) => {
