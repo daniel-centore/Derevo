@@ -32,6 +32,7 @@ export type TreeData = {
   commitMap: Record<string, TreeCommit>;
   dirty: boolean;
   stashEntries: number;
+  currentBranch: string | null;
 };
 
 export type Point = {

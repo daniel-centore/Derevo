@@ -1,4 +1,4 @@
-import { Button, ButtonGroup } from '@mui/joy';
+import { Button, ButtonGroup, Chip } from '@mui/joy';
 import { ReactNode } from 'react';
 import { TreeCommit, TreeData } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
@@ -107,17 +107,17 @@ export const Commit = (props: Props) => {
   if (isRebase) {
     circleColor = 'red';
   }
+  const disableCheckout = !!(rebase || treeData.dirty);
   return (
     <EntryWrapper
       circleColor={circleColor}
-      disablePointer={!!rebase || treeData.dirty}
+      disablePointer={disableCheckout}
       onClick={async () => {
-        if (rebase || treeData.dirty) {
+        if (disableCheckout) {
           return;
         }
-        const ref = meta.branches[0] || meta.oid;
         await window.electron.runCommands([
-          `git -c advice.detachedHead=false checkout ${ref}`,
+          `git -c advice.detachedHead=false checkout ${meta.oid}`,
         ]);
       }}
     >
@@ -129,13 +129,35 @@ export const Commit = (props: Props) => {
           color: !meta.mainBranch || meta.active ? 'rgb(188 192 196)' : 'grey',
           fontWeight: meta.active ? 'bold' : 'normal',
           paddingLeft: '20px',
-          marginTop: '5px',
+          marginTop: '2px',
         }}
       >
-        <span style={{ backgroundColor: 'grey', color: 'black' }}>
+        {meta.branches.length > 0 &&
+          meta.branches.map((branch) => {
+            const checkedOut = treeData.currentBranch === branch;
+            return (
+              <Chip
+                style={{ marginRight: '7px' }}
+                key={branch}
+                variant={checkedOut ? 'solid' : 'outlined'}
+                color={checkedOut ? 'primary' : 'neutral'}
+                onClick={() => {
+                  if (disableCheckout) {
+                    return;
+                  }
+                  window.electron.runCommands([
+                    `git -c advice.detachedHead=false checkout ${branch}`,
+                  ]);
+                }}
+              >
+                {branch}
+              </Chip>
+            );
+          })}
+        {/* <span style={{ backgroundColor: 'grey', color: 'black' }}>
           {meta.branches.length > 0 && `[${meta.branches.join(', ')}]`}
           {meta.branches.length === 0 && !meta.mainBranch && '[NO BRANCH]'}
-        </span>{' '}
+        </span>{' '} */}
         {meta.title}
         <ButtonGroup style={{ float: 'right', marginLeft: '15px' }} size="sm">
           {getButtons(props)}

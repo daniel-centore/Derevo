@@ -44,6 +44,13 @@ export const extractGitTree = async (): Promise<TreeData> => {
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
   // TODO: Customize main branch name
   const mainBranch = 'main';
+
+  const currentBranch = await git.currentBranch({
+    fs,
+    dir,
+    fullname: false,
+  });
+
   const activeCommit = await git.resolveRef({
     fs,
     dir,
@@ -184,6 +191,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
     commitMap,
     dirty,
     stashEntries,
+    currentBranch: currentBranch ?? null,
   };
 };
 
