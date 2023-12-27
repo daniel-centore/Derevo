@@ -48,7 +48,7 @@ export const Rebase = ({
             variant="outlined"
             style={{ marginTop: '7px' }}
             onClick={async () => {
-              await window.electron.api.runCommands([
+              await window.electron.runCommands([
                 'git add .',
                 'git -c core.editor=true rebase --continue',
               ]);

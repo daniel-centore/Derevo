@@ -17,7 +17,7 @@ const Main = () => {
 
   useEffect(() => {
     // console.log('Subscribed in renderer');
-    const unsubscribe = window.electron.api.on('git-tree-updated', (result) => {
+    const unsubscribe = window.electron.on('git-tree-updated', (result) => {
       // TODO: Improve types?
       // console.log('RECEIVED MESSAGE', { result });
       setTreeData(result as TreeData);
@@ -28,7 +28,7 @@ const Main = () => {
 
   useEffect(() => {
     // Load on start
-    window.electron.api.invoke('extract-git-tree');
+    window.electron.invoke('extract-git-tree');
   }, []);
 
   const { mode, setMode } = useColorScheme();
@@ -55,7 +55,7 @@ const Main = () => {
         <ButtonGroup>
           <Button
             onClick={() => {
-              window.electron.api.runCommands(['git fetch']);
+              window.electron.runCommands(['git fetch']);
             }}
           >
             Fetch
@@ -65,7 +65,7 @@ const Main = () => {
             onClick={() => {
               // TODO: Main branch name
               // TODO: origin name
-              window.electron.api.runCommands(['git pull origin main']);
+              window.electron.runCommands(['git pull origin main']);
             }}
           >
             Pull main
@@ -75,7 +75,7 @@ const Main = () => {
             onClick={() => {
               // TODO: Main branch name
               // TODO: origin name
-              window.electron.api.runCommands(['git pull']);
+              window.electron.runCommands(['git pull']);
             }}
           >
             Pull current
@@ -83,7 +83,7 @@ const Main = () => {
           <Button
             disabled={!treeData || treeData.stashEntries === 0}
             onClick={() => {
-              window.electron.api.runCommands(['git stash clear']);
+              window.electron.runCommands(['git stash clear']);
             }}
           >
             Stash clear

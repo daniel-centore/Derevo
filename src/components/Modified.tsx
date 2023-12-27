@@ -62,11 +62,11 @@ export const Modified = ({
         <ButtonGroup>
           <Button
             onClick={async () => {
-              // await window.electron.api.runCommands([
+              // await window.electron.runCommands([
               // 'git add .',
               // 'git -c core.editor=true rebase --continue',
               // ]);
-              window.electron.api.runCommands([
+              window.electron.runCommands([
                 // TODO: Customize branch name
                 `git checkout -b derevo-${nanoid()}`,
                 // TODO: Respect checked files
@@ -83,7 +83,7 @@ export const Modified = ({
             onClick={() => {
               // TODO: Respect checked files
               // TODO: Add stash message
-              window.electron.api.runCommands(['git stash']);
+              window.electron.runCommands(['git stash']);
             }}
           >
             Stash

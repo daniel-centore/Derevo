@@ -64,7 +64,7 @@ const getButtons = ({
           const fromRoot = treeData.commitMap[rebase];
           const toRoot = treeData.commitMap[meta.oid];
 
-          await window.electron.api.rebase({
+          await window.electron.rebase({
             from: fromRoot,
             to: toRoot.metadata.oid,
           });
@@ -83,7 +83,7 @@ const getButtons = ({
     buttons.push(
       <Button
         onClick={() => {
-          window.electron.api.runCommands(['git stash pop']);
+          window.electron.runCommands(['git stash pop']);
         }}
       >
         Stash pop
@@ -116,7 +116,7 @@ export const Commit = (props: Props) => {
           return;
         }
         const ref = meta.branches[0] || meta.oid;
-        await window.electron.api.runCommands([
+        await window.electron.runCommands([
           `git -c advice.detachedHead=false checkout ${ref}`,
         ]);
       }}

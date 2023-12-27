@@ -14,11 +14,11 @@ export const TerminalComponent = () => {
       cols: 100,
     });
 
-    const unsubscribe = window.electron.api.on('terminal-out', (data) => {
+    const unsubscribe = window.electron.on('terminal-out', (data) => {
       terminal.write(data as string);
     });
     terminal.onData((data) => {
-      window.electron.api.invoke('terminal-in', data);
+      window.electron.invoke('terminal-in', data);
     });
 
     terminal.open(ref.current);
