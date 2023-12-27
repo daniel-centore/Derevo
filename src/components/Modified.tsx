@@ -24,7 +24,6 @@ export const Modified = ({
       <div
         style={{
           marginLeft: '20px',
-          // padding: '10px',
           paddingLeft: '20px',
           paddingRight: '20px',
           paddingTop: '15px',

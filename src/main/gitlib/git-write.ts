@@ -10,10 +10,15 @@ import { RebaseStatus, TreeCommit } from '../../types/types';
 import { extractGitTree, reloadGitTree } from './git-tree';
 import { sleep } from '../util';
 import { rebaseInProgress } from './git-read';
-import { rebaseStatus, setRebaseStatus } from './activity-status';
+import {
+  rebaseInitialFrom,
+  rebaseStatusInProgress,
+  setRebaseInitialTo as setRebaseInitialFrom,
+  setRebaseStatus,
+} from './activity-status';
+import { TEMP_BRANCH_PREFIX } from '../../types/consts';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
-const TEMP_BRANCH_PREFIX = 'derevo-tmp/';
 
 export const commit = () => {
   // git checkout -b testing-branch
@@ -126,6 +131,15 @@ export const abortRebase = async ({
       mainWindow,
     });
   }
+
+  await spawn({
+    cmd: `git -c advice.detachedHead=false checkout ${rebaseInitialFrom()}`,
+    dir,
+    mainWindow,
+  });
+
+  setRebaseStatus('stopped');
+  await reloadGitTree({ mainWindow });
 };
 
 const performRebaseHelper = async ({
@@ -139,7 +153,7 @@ const performRebaseHelper = async ({
   branchRenames: BranchRename[];
   mainWindow: BrowserWindow;
 }) => {
-  if (rebaseStatus() === 'cancel-requested') {
+  if (!rebaseStatusInProgress()) {
     return;
   }
 
@@ -167,7 +181,7 @@ const performRebaseHelper = async ({
   if (returnValue !== 0) {
     let waitingForRebaseComplete = true;
     while (waitingForRebaseComplete) {
-      if (rebaseStatus() === 'cancel-requested') {
+      if (!rebaseStatusInProgress()) {
         return;
       }
 
@@ -180,14 +194,14 @@ const performRebaseHelper = async ({
     }
   }
 
-  if (rebaseStatus() === 'cancel-requested') {
+  if (!rebaseStatusInProgress()) {
     return;
   }
 
   await reloadGitTree({ mainWindow });
 
   for (const split of from.branchSplits) {
-    if (rebaseStatus() === 'cancel-requested') {
+    if (!rebaseStatusInProgress()) {
       return;
     }
     if (split.type !== 'commit') {
@@ -213,12 +227,14 @@ export const performRebase = async ({
   to: string;
 }) => {
   setRebaseStatus('in-progress');
+  setRebaseInitialFrom(from.metadata.oid);
 
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   const branchRenames: BranchRename[] = [];
   await performRebaseHelper({ from, to, branchRenames, mainWindow });
 
-  if (rebaseStatus() === 'cancel-requested') {
+  // console.log('performRebase', {status: rebaseStatus()});
+  if (!rebaseStatusInProgress()) {
     return;
   }
 
@@ -251,9 +267,9 @@ export const performRebase = async ({
       await spawn({ cmd: `git branch -D ${tempBranchName}`, dir, mainWindow });
     }
   }
-  await reloadGitTree({ mainWindow });
 
   setRebaseStatus('stopped');
+  await reloadGitTree({ mainWindow });
 };
 
 export const terminalIn = (str: string) => {
