@@ -33,7 +33,7 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-ipcMain.handle('extractGitTree', async () => {
+ipcMain.handle('extract-git-tree', async () => {
   if (!mainWindow) {
     return;
   }
@@ -52,7 +52,7 @@ ipcMain.handle('run-cmds', async (_event, data) => {
 
     // eslint-disable-next-line no-await-in-loop
     const result = await extractGitTree();
-    mainWindow?.webContents.send('extractGitTree', result);
+    mainWindow?.webContents.send('git-tree-updated', result);
   }
 });
 
@@ -64,16 +64,6 @@ ipcMain.handle('rebase', async (_, data) => {
   const { from, to }: { from: TreeCommit; to: string } = data;
 
   await performRebase({ from, to, mainWindow });
-});
-
-ipcMain.handle('git-pull', async () => {
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
-
-  if (!mainWindow) {
-    return;
-  }
-
-  await spawn({ cmd: 'git pull origin main', dir, mainWindow });
 });
 
 ipcMain.handle('terminal-in', (_event, ptyData) => {

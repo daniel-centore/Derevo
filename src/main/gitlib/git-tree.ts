@@ -25,6 +25,20 @@ const rawCommitToMeta = ({
   authorTs: new Date(rawCommit.commit.author.timestamp * 1000),
 });
 
+const stashList = async () => {
+  // TODO: Replace dir
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
+
+  const execPromise = util.promisify(exec);
+  const { stdout: entries, stderr } = await execPromise('git stash list', {
+    cwd: dir,
+  });
+  return entries
+    .split('\n')
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0);
+};
+
 export const extractGitTree = async (): Promise<TreeData> => {
   // TODO: Replace dir
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
@@ -96,13 +110,9 @@ export const extractGitTree = async (): Promise<TreeData> => {
       };
 
       if (rawCommit.oid === activeCommit) {
-        // TODO: populate dirty status
-
-        const execPromise = util.promisify(exec);
+        // const execPromise = util.promisify(exec);
         // eslint-disable-next-line no-await-in-loop
-        const unmergedFiles = await getModifiedFiles(dir, {
-          variant: 'modified',
-        });
+        const unmergedFiles = await getModifiedFiles(dir);
 
         // console.log({ unmergedFiles });
 
@@ -128,7 +138,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
           const readFilePromise = util.promisify(fs.readFile);
           const conflictedFiles = [];
           for (const file of unmergedFiles) {
-            const contents = await readFilePromise(file, 'utf-8');
+            const contents = await readFilePromise(`${dir}/${file}`, 'utf-8');
             const lines = contents.split(/\r?\n/);
             if (lines.some((line) => line.startsWith('<<<<<<<'))) {
               conflictedFiles.push(file);
@@ -168,10 +178,12 @@ export const extractGitTree = async (): Promise<TreeData> => {
   //     { showHidden: false, depth: null, colors: true },
   //   ),
   // );
+  const stashEntries = (await stashList()).length;
   return {
     rootCommit,
     commitMap,
     dirty,
+    stashEntries,
   };
 };
 
@@ -181,7 +193,7 @@ export const reloadGitTree = async ({
   mainWindow: BrowserWindow | undefined;
 }) => {
   const result = await extractGitTree();
-  mainWindow?.webContents.send('extractGitTree', result);
+  mainWindow?.webContents.send('git-tree-updated', result);
 };
 
 const REFRESH_FREQUENCY = 1000;

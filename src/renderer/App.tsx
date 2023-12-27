@@ -1,18 +1,38 @@
 import { Route, MemoryRouter as Router, Routes } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Button, CssBaseline, CssVarsProvider, useColorScheme } from '@mui/joy';
+import {
+  Button,
+  ButtonGroup,
+  CssBaseline,
+  CssVarsProvider,
+  useColorScheme,
+} from '@mui/joy';
 import { Tree } from '../components/Tree';
 import './App.css';
 import { TerminalComponent } from '../components/TerminalComponent';
+import { TreeData } from '../types/types';
 
 const Main = () => {
+  const [treeData, setTreeData] = useState<TreeData>();
+
+  useEffect(() => {
+    // console.log('Subscribed in renderer');
+    const unsubscribe = window.electron.api.on('git-tree-updated', (result) => {
+      // TODO: Improve types?
+      // console.log('RECEIVED MESSAGE', { result });
+      setTreeData(result as TreeData);
+      // setTreeData({test123: 45});
+    });
+    return () => unsubscribe();
+  }, [setTreeData]);
+
   useEffect(() => {
     // Load on start
-    window.electron.api.invoke('extractGitTree');
+    window.electron.api.invoke('extract-git-tree');
   }, []);
 
   const { mode, setMode } = useColorScheme();
-  console.log({mode});
+  console.log({ mode });
   if (mode === 'light') {
     setMode('dark');
   }
@@ -28,26 +48,53 @@ const Main = () => {
         flexDirection: 'column',
       }}
     >
-      <div style={{ marginTop: '18px', marginBottom: '10px' }}>
-        <Button
-          variant="outlined"
-          onClick={() => {
-            window.electron.api.invoke('extractGitTree');
-          }}
-        >
-          Refresh
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={() => {
-            window.electron.api.invoke('git-pull');
-          }}
-        >
-          Pull
-        </Button>
+      <div
+        style={{ marginTop: '18px', marginBottom: '10px', marginLeft: '10px' }}
+      >
+        {/* TODO: Populate buttons using an array so they always have rounded edges */}
+        <ButtonGroup>
+          <Button
+            onClick={() => {
+              window.electron.api.runCommands(['git fetch']);
+            }}
+          >
+            Fetch
+          </Button>
+          <Button
+            disabled={treeData?.dirty}
+            onClick={() => {
+              // TODO: Main branch name
+              // TODO: origin name
+              window.electron.api.runCommands(['git pull origin main']);
+            }}
+          >
+            Pull main
+          </Button>
+          <Button
+            disabled={treeData?.dirty}
+            onClick={() => {
+              // TODO: Main branch name
+              // TODO: origin name
+              window.electron.api.runCommands(['git pull']);
+            }}
+          >
+            Pull current
+          </Button>
+          <Button
+            disabled={!treeData || treeData.stashEntries === 0}
+            onClick={() => {
+              window.electron.api.runCommands(['git stash clear']);
+            }}
+          >
+            Stash clear
+            {treeData && treeData.stashEntries > 0
+              ? ` (${treeData?.stashEntries})`
+              : ''}
+          </Button>
+        </ButtonGroup>
       </div>
       <div slot="start" style={{ flexGrow: 1, overflowY: 'scroll' }}>
-        <Tree />
+        {treeData && <Tree treeData={treeData} />}
       </div>
       <div
         slot="end"

@@ -54,6 +54,7 @@ export const spawn = async ({
   mainWindow: BrowserWindow;
 }): Promise<number> => {
   if (ptyProcess) {
+    // TODO Lock instead
     console.log('Error: Process already running!');
     // ptyProcess.onExit(() => {
     //   spawn(cmd, cwd);
@@ -166,8 +167,6 @@ export const performRebase = async ({
   from: TreeCommit;
   to: string;
 }) => {
-  // TODO: When rebasing in such a way that a commit underneath the branch would disappear,
-  // assign that commit a random branch name
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   const branchRenames: BranchRename[] = [];
   await performRebaseHelper({ from, to, branchRenames, mainWindow });
@@ -180,15 +179,19 @@ export const performRebase = async ({
         mainWindow,
       });
     }
-    // eslint-disable-next-line no-await-in-loop
-    await spawn({
-      cmd: `git -c advice.detachedHead=false checkout ${to}`,
-      dir,
-      mainWindow,
-    });
 
     // Don't want to delete the branch if the commit will disappear
     if (from.metadata.branches.length > 0 || from.branchSplits.length > 0) {
+      // Need to check out a branch other than the temp one
+      // eslint-disable-next-line no-await-in-loop
+      await spawn({
+        cmd: `git checkout ${
+          goalBranches.length > 0 ? goalBranches[0] : 'head'
+        }`,
+        dir,
+        mainWindow,
+      });
+
       // eslint-disable-next-line no-await-in-loop
       await spawn({ cmd: `git branch -D ${tempBranchName}`, dir, mainWindow });
     }
@@ -198,4 +201,4 @@ export const performRebase = async ({
 
 export const terminalIn = (str: string) => {
   ptyProcess?.write(str);
-}
+};
