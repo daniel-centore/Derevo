@@ -24,6 +24,7 @@ module.exports = {
     'no-continue': 'off',
     'no-await-in-loop': 'warn',
     'react/require-default-props': 'off',
+    'no-unneeded-ternary': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

@@ -109,7 +109,7 @@ const performRebaseHelper = async ({
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   // TODO: Handle situation when a commit in the graph has no branch
   // TODO: Handle situation when a commit has multiple branches
-  const tempBranchName = `derevo-${nanoid()}`;
+  const tempBranchName = `derevo-tmp/${nanoid()}`;
   await spawn({
     cmd: `git branch --no-track ${tempBranchName} ${from.metadata.oid}`,
     dir,
@@ -137,9 +137,6 @@ const performRebaseHelper = async ({
         await sleep(500);
       }
     }
-    // TODO: Wait for "Continue"
-    // await spawn('git add .', dir);
-    // await spawn('git -c core.editor=true rebase --continue', dir);
   }
 
   await reloadGitTree({ mainWindow });

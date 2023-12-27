@@ -6,8 +6,8 @@ import { CIRCLE_RADIUS } from './consts';
 export const Rebase = ({
   // commit,
   treeRebase, // rebase,
-  // loc, // isRebase,
-} // treeData,
+  // treeData,
+} // loc, // isRebase,
 // setRebase,
 : {
   // commit: TreeCommit;
@@ -50,6 +50,10 @@ export const Rebase = ({
             onClick={async () => {
               await window.electron.runCommands([
                 'git add .',
+                // This is a kludge which forces the creation of an empty commit if
+                // the rebase results in no changes
+                // See https://stackoverflow.com/a/45693978/998251
+                'git commit --allow-empty --no-edit',
                 'git -c core.editor=true rebase --continue',
               ]);
             }}
