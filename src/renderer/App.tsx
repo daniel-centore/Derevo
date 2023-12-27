@@ -5,6 +5,8 @@ import {
   ButtonGroup,
   CssBaseline,
   CssVarsProvider,
+  ThemeProvider,
+  // createTheme,
   useColorScheme,
 } from '@mui/joy';
 import { Tree } from '../components/Tree';
@@ -32,7 +34,7 @@ const Main = () => {
   }, []);
 
   const { mode, setMode } = useColorScheme();
-  console.log({ mode });
+  // console.log({ mode });
   if (mode === 'light') {
     setMode('dark');
   }
@@ -109,6 +111,12 @@ const Main = () => {
   );
 };
 
+// const darkTheme = createTheme({
+//   palette: {
+//     mode: 'dark',
+//   },
+// });
+
 export default function App() {
   return (
     <Router>
@@ -117,8 +125,10 @@ export default function App() {
           path="/"
           element={
             <CssVarsProvider defaultColorScheme="dark">
+            {/* <ThemeProvider theme={darkTheme}> */}
               <CssBaseline />
               <Main />
+            {/* </ThemeProvider> */}
             </CssVarsProvider>
           }
         />

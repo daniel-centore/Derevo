@@ -53,7 +53,10 @@ ipcMain.handle('run-cmds', async (_event, data) => {
   }
 
   for (const cmd of data as string[]) {
-    await spawn({ cmd, dir, mainWindow });
+    const returnValue = await spawn({ cmd, dir, mainWindow });
+    if (returnValue !== 0) {
+      return;
+    }
 
     // eslint-disable-next-line no-await-in-loop
     const result = await extractGitTree();

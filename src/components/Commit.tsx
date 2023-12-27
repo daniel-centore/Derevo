@@ -97,7 +97,21 @@ const getButtons = ({
     !meta.onMainBranch &&
     !rebase
   ) {
-    buttons.push(<Button>Uncommit</Button>);
+    buttons.push(
+      <Button
+        onClick={async () => {
+          // TODO: Delete current branch first
+          // TODO: Can we pre-populate the "Changes" dialogue which pops up afterward?
+          await window.electron.runCommands([
+            'git checkout head',
+            `git branch -D ${meta.branches.join(' ')}`,
+            'git reset --soft HEAD~',
+          ]);
+        }}
+      >
+        Uncommit
+      </Button>,
+    );
   }
 
   if (

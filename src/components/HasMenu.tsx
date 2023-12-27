@@ -32,7 +32,7 @@ export const HasMenu = ({
               zIndex: 99999,
             }}
           >
-            <MenuList size="sm">
+            <MenuList>
               {menuItems.map(({ label, onClick, disabled }, idx) => (
                 <MenuItem
                   // eslint-disable-next-line react/no-array-index-key
