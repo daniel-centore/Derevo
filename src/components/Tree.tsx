@@ -4,7 +4,7 @@ import { head, set } from 'lodash';
 import { Point, TreeCommit, TreeData, TreeEntry } from '../types/types';
 import { Commit } from './Commit';
 import { Rebase } from './Rebase';
-import { getModified } from './Modified';
+import { Modified } from './Modified';
 import { LINE_THICKNESS } from './consts';
 
 type TreeChunkData = {
@@ -238,8 +238,11 @@ const sortBranches = (branchSplits: TreeEntry[]) => {
   // TODO: Update sorting to prefer being based on when the oid was first
   // seen by Derevo (so rebases always end up further right)
   branchSplits.sort((a, b) => {
-    if (a.type !== 'commit' || b.type !== 'commit') {
-      return a.type < b.type ? -1 : 1;
+    if (a.type !== 'commit') {
+      return 1;
+    }
+    if (b.type !== 'commit') {
+      return -1;
     }
     if (a.metadata.mainBranch) {
       return -1;
@@ -293,7 +296,7 @@ const toEntries = ({
     ) {
       mainDescendant = branchSplits.shift();
     }
-    // branchSplits.reverse();
+    branchSplits.reverse();
 
     entries.push({
       entry,
@@ -350,7 +353,8 @@ const TreeEntryChunkMainRow = ({
   setRebase: (oid: string | undefined) => void;
   isRebasing: boolean;
 }) => {
-  if (entry.entry.type === 'commit') {
+  const entryType = entry.entry.type;
+  if (entryType === 'commit') {
     return (
       <Commit
         commit={entry.entry}
@@ -361,10 +365,13 @@ const TreeEntryChunkMainRow = ({
       />
     );
   }
-  if (entry.entry.type === 'rebase') {
-    return <Rebase treeRebase={entry.entry} />
+  if (entryType === 'rebase') {
+    return <Rebase treeRebase={entry.entry} />;
   }
-  return <div>TODO: Replace me</div>;
+  if (entryType === 'modified') {
+    return <Modified entry={entry.entry} treeData={treeData} />;
+  }
+  return <div>Unhandled entry type {entryType}</div>;
 };
 
 const TreeEntryChunk = ({
@@ -466,7 +473,9 @@ const TreeChunk = ({
   const isRebasing =
     isRebasingRaw || (root.type === 'commit' && rebase === root.metadata.oid);
 
-  for (const entry of toEntries({ root, isRebasing, rebase })) {
+  const entries = toEntries({ root, isRebasing, rebase });
+  for (let i = 0; i < entries.length; ++i) {
+    const entry = entries[i];
     // if (entry.entry.type === 'commit' && entry.entry.metadata.oid === rebase) {
     //   isRebaseTemp = true;
     // }

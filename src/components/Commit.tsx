@@ -1,3 +1,4 @@
+import { Button } from '@mui/joy';
 import { TreeCommit, TreeData } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 
@@ -55,18 +56,18 @@ export const Commit = ({
         </span>{' '}
         {meta.title}
         {!treeData.dirty && meta.active && !meta.mainBranch && !rebase && (
-          <button
-            type="button"
+          <Button
+            variant="outlined"
             onClick={() => {
               setRebase(meta.oid);
             }}
           >
             Rebase →
-          </button>
+          </Button>
         )}
         {!treeData.dirty && rebase === meta.oid && (
-          <button
-            type="button"
+          <Button
+          variant="outlined"
             onClick={() => {
               setRebase(undefined);
             }}
@@ -77,7 +78,7 @@ export const Commit = ({
             }}
           >
             Cancel Rebase
-          </button>
+          </Button>
         )}
         {!treeData.dirty &&
           rebase &&
@@ -85,8 +86,8 @@ export const Commit = ({
           !commit.branchSplits.some(
             (x) => x.type === 'commit' && x.metadata.oid === rebase,
           ) && (
-            <button
-              type="button"
+            <Button
+              variant="outlined"
               onClick={async () => {
                 const fromRoot = treeData.commitMap[rebase];
                 const toRoot = treeData.commitMap[meta.oid];
@@ -98,10 +99,10 @@ export const Commit = ({
               }}
             >
               ← Rebase
-            </button>
+            </Button>
           )}
         {!treeData.dirty && meta.active && !meta.mainBranch && !rebase && (
-          <button type="button">Uncommit</button>
+          <Button variant="outlined">Uncommit</Button>
         )}
       </div>
     </EntryWrapper>

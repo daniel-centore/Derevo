@@ -1,5 +1,6 @@
 import { Route, MemoryRouter as Router, Routes } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { Button, CssBaseline, CssVarsProvider, useColorScheme } from '@mui/joy';
 import { Tree } from '../components/Tree';
 import './App.css';
 import { TerminalComponent } from '../components/TerminalComponent';
@@ -9,6 +10,12 @@ const Main = () => {
     // Load on start
     window.electron.api.invoke('extractGitTree');
   }, []);
+
+  const { mode, setMode } = useColorScheme();
+  console.log({mode});
+  if (mode === 'light') {
+    setMode('dark');
+  }
 
   return (
     <div
@@ -22,22 +29,22 @@ const Main = () => {
       }}
     >
       <div style={{ marginTop: '18px', marginBottom: '10px' }}>
-        <button
-          type="button"
+        <Button
+          variant="outlined"
           onClick={() => {
             window.electron.api.invoke('extractGitTree');
           }}
         >
           Refresh
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="outlined"
           onClick={() => {
             window.electron.api.invoke('git-pull');
           }}
         >
           Pull
-        </button>
+        </Button>
       </div>
       <div slot="start" style={{ flexGrow: 1, overflowY: 'scroll' }}>
         <Tree />
@@ -59,7 +66,15 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Main />} />
+        <Route
+          path="/"
+          element={
+            <CssVarsProvider defaultColorScheme="dark">
+              <CssBaseline />
+              <Main />
+            </CssVarsProvider>
+          }
+        />
       </Routes>
     </Router>
   );

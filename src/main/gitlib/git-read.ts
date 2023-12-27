@@ -23,7 +23,7 @@ export const getModifiedFiles = async (
     ),
   ];
   unmergedFiles.sort();
-  console.log({ unmergedFiles });
+  // console.log({ unmergedFiles });
   return unmergedFiles;
 };
 

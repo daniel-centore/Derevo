@@ -3,21 +3,15 @@
  *        See https://github.com/webpack-contrib/sass-loader#imports
  */
 body {
-  /* position: relative; */
-  color: white;
-  /* height: 100vh; */
-  background: rgb(23 25 26);
-  font-family: sans-serif;
+  /* color: white; */
+  background: rgb(23 25 26) !important;
+  /* font-family: sans-serif;
   overflow-y: scroll;
   margin-top: 0;
-  margin-bottom: 0;
-  /* overflow-y: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center; */
+  margin-bottom: 0; */
 }
 
-button {
+/* button {
   padding: 4px 15px;
   margin-left: 7px;
   border-radius: 7px;
@@ -37,9 +31,9 @@ button:hover:enabled {
 
 button:focus-visible {
   outline: solid;
-}
+} */
 
-li {
+/* li {
   list-style: none;
 }
 
@@ -58,4 +52,4 @@ a:hover {
 h2 {
   margin-block-start: 0;
   margin-block-end: 0;
-}
+} */

@@ -1,3 +1,4 @@
+import { Button } from '@mui/joy';
 import { Point, TreeCommit, TreeData, TreeRebase } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { CIRCLE_RADIUS } from './consts';
@@ -43,8 +44,8 @@ export const Rebase = ({
           Conflicts: {treeRebase.conflictedFiles.join(', ')}
         </div>
         {treeRebase.conflictedFiles.length === 0 && (
-          <button
-            type="button"
+          <Button
+            variant="outlined"
             style={{ marginTop: '7px' }}
             onClick={async () => {
               await window.electron.api.runCommands([
@@ -54,52 +55,10 @@ export const Rebase = ({
             }}
           >
             Continue
-          </button>
+          </Button>
         )}
         {/* TODO: Abort button */}
       </div>
     </EntryWrapper>
   );
-
-  // const meta = commit.metadata;
-  // return (
-  //   <>
-  //     <circle cx={loc.x} cy={loc.y} r={CIRCLE_RADIUS} fill="cyan" />
-  //     {/* TODO: Max width based on something else? */}
-  //     <foreignObject x={loc.x + 20} y={loc.y - 170} width="1000" height="200">
-  //       <div style={{ paddingTop: '1px', backgroundColor: 'rgb(50 50 50)' }}>
-  //         <div
-  //           style={{
-  //             fontSize: '14px',
-  //             lineHeight: '26px', // Should be height of largest element
-  //             margin: '0',
-  //             color: 'rgb(188 192 196)',
-  //             fontWeight: 'bold',
-  //           }}
-  //         >
-  //           Rebase in Progress
-  //           <br />
-  //           Dirty: {treeRebase.dirtyFiles.join(', ')}
-  //           <br />
-  //           Conflicts: {treeRebase.conflictedFiles.join(', ')}
-  //         </div>
-  //         {treeRebase.conflictedFiles.length === 0 && (
-  //           <button
-  //             type="button"
-  //             style={{ marginTop: '7px' }}
-  //             onClick={async () => {
-  //               await window.electron.api.runCommands([
-  //                 'git add .',
-  //                 'git -c core.editor=true rebase --continue',
-  //               ]);
-  //             }}
-  //           >
-  //             Continue
-  //           </button>
-  //         )}
-  //         {/* TODO: Abort button */}
-  //       </div>
-  //     </foreignObject>
-  //   </>
-  // );
 };

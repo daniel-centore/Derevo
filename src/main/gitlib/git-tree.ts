@@ -104,7 +104,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
           variant: 'modified',
         });
 
-        console.log({ unmergedFiles });
+        // console.log({ unmergedFiles });
 
         if (unmergedFiles.length > 0) {
           // Dirty

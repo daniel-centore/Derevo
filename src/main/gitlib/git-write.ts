@@ -43,6 +43,7 @@ const executeCommand = async (dir: string, cmd: string) => {
 
 let ptyProcess: pty.IPty | null = null;
 
+// TODO: Hit spawn hard to see if you can repro the "posix_spawnp failed" error
 export const spawn = async ({
   cmd,
   dir,
@@ -107,7 +108,7 @@ const performRebaseHelper = async ({
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   // TODO: Handle situation when a commit in the graph has no branch
   // TODO: Handle situation when a commit has multiple branches
-  const tempBranchName = `tmp-${nanoid()}`;
+  const tempBranchName = `derevo-${nanoid()}`;
   await spawn({
     cmd: `git branch --no-track ${tempBranchName} ${from.metadata.oid}`,
     dir,
@@ -165,6 +166,8 @@ export const performRebase = async ({
   from: TreeCommit;
   to: string;
 }) => {
+  // TODO: When rebasing in such a way that a commit underneath the branch would disappear,
+  // assign that commit a random branch name
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   const branchRenames: BranchRename[] = [];
   await performRebaseHelper({ from, to, branchRenames, mainWindow });
