@@ -23,10 +23,9 @@ import {
 import {
   abortRebase,
   performRebase,
-  spawn,
-  terminalIn,
 } from './gitlib/git-write';
 import { TreeCommit } from '../types/types';
+import { spawnTerminal, terminalIn } from './gitlib/terminal';
 
 class AppUpdater {
   constructor() {
@@ -50,7 +49,7 @@ ipcMain.handle('stress-test', async () => {
     return;
   }
   for (let i = 1; i <= 1000; i++) {
-    await spawn({ cmd: `echo hello ${i}`, dir: '~', mainWindow });
+    await spawnTerminal({ cmd: `echo hello ${i}`, dir: '~', mainWindow });
   }
 });
 
@@ -62,7 +61,7 @@ ipcMain.handle('run-cmds', async (_event, data) => {
   }
 
   for (const cmd of data as string[]) {
-    const returnValue = await spawn({ cmd, dir, mainWindow });
+    const returnValue = await spawnTerminal({ cmd, dir, mainWindow });
     if (returnValue !== 0) {
       return;
     }

@@ -104,6 +104,13 @@ const Main = () => {
           >
             Stress Test
           </Button>
+          <Button
+            onClick={() => {
+              window.electron.runCommands(['vim']);
+            }}
+          >
+            Vim
+          </Button>
         </ButtonGroup>
       </div>
       <div slot="start" style={{ flexGrow: 1, overflowY: 'scroll' }}>
