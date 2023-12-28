@@ -9,7 +9,7 @@ let ptyProcess: pty.IPty | null = null;
  * NOTE: This is only used for display purposes, it's not actually piped into bash
  */
 const escapeShellArg = (arg: string) => {
-  const simpleArg = /^[a-zA-Z\d]*$/;
+  const simpleArg = /^[a-zA-Z\d-]*$/;
   if (simpleArg.exec(arg)) {
     return arg;
   }

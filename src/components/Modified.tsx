@@ -1,6 +1,6 @@
 import { Button, ButtonGroup, Checkbox, Input } from '@mui/joy';
 import { customAlphabet } from 'nanoid';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isNil } from 'lodash';
 import { TreeData, TreeModified } from '../types/types';
 import { EntryWithBox } from './EntryWithBox';
@@ -19,9 +19,27 @@ export const Modified = ({
 }) => {
   const [message, setMessage] = useState<string>();
   const [branch, setBranch] = useState<string>();
-  const [checkedFiles, setCheckedFiles] = useState<Set<string>>(
-    new Set(entry.dirtyFiles),
+  const [checkedFileMap, setCheckedFileMap] = useState<Record<string, boolean>>(
+    {},
   );
+  useEffect(() => {
+    const newEntries = entry.dirtyFiles
+      .filter((file) => !(file in checkedFileMap))
+      .reduce(
+        (prev, file) => ({ ...prev, [file]: true }),
+        {} as Record<string, boolean>,
+      );
+    setCheckedFileMap({
+      ...checkedFileMap,
+      ...newEntries,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry.dirtyFiles]);
+
+  const checkedFiles = Object.keys(checkedFileMap).filter(
+    (file) => checkedFileMap[file],
+  );
+
   return (
     <EntryWithBox>
       <div
@@ -32,7 +50,7 @@ export const Modified = ({
           marginBottom: '10px',
         }}
       >
-        Changes {entry.branches}
+        Changes {[...checkedFiles].join(', ')}
       </div>
       {entry.dirtyFiles.map((file) => (
         <div key={file}>
@@ -40,13 +58,11 @@ export const Modified = ({
             label={file}
             defaultChecked
             onChange={(evt) => {
-              if (evt.currentTarget.checked) {
-                setCheckedFiles((prev) => new Set([...prev, file]));
-              } else {
-                setCheckedFiles(
-                  (prev) => new Set([...prev].filter((x) => x !== file)),
-                );
-              }
+              const target = evt.currentTarget;
+              setCheckedFileMap((prev) => ({
+                ...prev,
+                [file]: target.checked,
+              }));
             }}
           />
         </div>
@@ -86,7 +102,6 @@ export const Modified = ({
                     branch ? branch : `derevo-${nanoid()}`,
                   ],
                 },
-                // TODO: Respect checked files
                 { cmd: 'git', args: ['add', ...checkedFiles] },
                 {
                   cmd: 'git',
@@ -95,6 +110,7 @@ export const Modified = ({
                     '--allow-empty-message',
                     '-m',
                     message ?? '',
+                    ...checkedFiles,
                   ],
                 },
               ]);
@@ -118,6 +134,11 @@ export const Modified = ({
                     ...checkedFiles,
                   ],
                 },
+                { cmd: 'git', args: ['checkout', 'head'] },
+                ...entry.branches.map((br) => ({
+                  cmd: 'git',
+                  args: ['branch', '--force', br, 'head'],
+                })),
               ]);
             }}
           >
@@ -125,9 +146,10 @@ export const Modified = ({
           </Button>
           <Button
             onClick={() => {
-              // TODO: Respect checked files
               // TODO: Add stash message
-              window.electron.runCommands([{ cmd: 'git', args: ['stash'] }]);
+              window.electron.runCommands([
+                { cmd: 'git', args: ['stash', 'push', ...checkedFiles] },
+              ]);
             }}
           >
             Stash
