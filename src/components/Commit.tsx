@@ -188,7 +188,7 @@ export const Commit = (props: Props) => {
                 key={branch}
                 menuItems={[
                   {
-                    label: 'Rebase',
+                    label: 'Rebase →',
                     disabled: meta.onMainBranch,
                     onClick: () => {
                       setRebase(meta.oid);
@@ -239,7 +239,7 @@ export const Commit = (props: Props) => {
                 },
               },
               {
-                label: 'Rebase',
+                label: 'Rebase →',
                 disabled: meta.onMainBranch,
                 onClick: () => {
                   setRebase(meta.oid);

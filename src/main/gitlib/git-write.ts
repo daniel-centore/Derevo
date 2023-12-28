@@ -222,7 +222,7 @@ export const performRebase = async ({
     await spawnTerminal({
       command: {
         cmd: 'git',
-        args: ['checkout', 'tempBranchName'],
+        args: ['checkout', tempBranchName],
       },
       dir,
       mainWindow,

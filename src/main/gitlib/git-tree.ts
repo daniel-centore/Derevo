@@ -121,6 +121,10 @@ export const extractGitTree = async (): Promise<TreeData> => {
         // const execPromise = util.promisify(exec);
         // eslint-disable-next-line no-await-in-loop
         const unmergedFiles = await getModifiedFiles(dir);
+        console.log({ unmergedFiles });
+        const unmergedFilenames = unmergedFiles
+          .filter((x) => x.status !== 'added, staged')
+          .map((x) => x.filename);
 
         // console.log({ unmergedFiles });
 
@@ -145,7 +149,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
         if (rebaseFolderExists) {
           const readFilePromise = util.promisify(fs.readFile);
           const conflictedFiles = [];
-          for (const file of unmergedFiles) {
+          for (const file of unmergedFilenames) {
             const contents = await readFilePromise(`${dir}/${file}`, 'utf-8');
             const lines = contents.split(/\r?\n/);
             if (lines.some((line) => line.startsWith('<<<<<<<'))) {
@@ -155,14 +159,14 @@ export const extractGitTree = async (): Promise<TreeData> => {
 
           commit.branchSplits.push({
             type: 'rebase',
-            dirtyFiles: unmergedFiles,
+            dirtyFiles: unmergedFilenames,
             conflictedFiles,
           });
         } else if (unmergedFiles.length > 0) {
           // TODO: Handle non-rebase situation
           commit.branchSplits.push({
             type: 'modified',
-            dirtyFiles: unmergedFiles,
+            dirtyFiles: unmergedFilenames,
           });
         }
 

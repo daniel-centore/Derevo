@@ -12,7 +12,8 @@ export const getModifiedFiles = async (
   const WORKDIR = 2;
   const STAGE = 3;
 
-  const statusMapping = {
+  // TODO: Better types
+  const statusMapping: Record<string, string> = {
     '003': 'added, staged, deleted unstaged',
     '020': 'new, untracked',
     '022': 'added, staged',
@@ -32,7 +33,10 @@ export const getModifiedFiles = async (
 
   const allUncommitedChanges = statusMatrix.map(
     // (row) => `${statusMapping[row.slice(1).join('')]}: ${row[FILE]}`,
-    (row) => row[FILE],
+    (row) => ({
+      filename: row[FILE],
+      status: statusMapping[row.slice(1).join('')],
+    }),
   );
 
   return allUncommitedChanges;
