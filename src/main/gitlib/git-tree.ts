@@ -167,6 +167,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
           commit.branchSplits.push({
             type: 'modified',
             dirtyFiles: unmergedFilenames,
+            branches: commit.metadata.branches,
           });
         }
 

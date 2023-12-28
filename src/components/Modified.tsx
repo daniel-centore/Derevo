@@ -1,9 +1,8 @@
 import { Button, ButtonGroup, Checkbox, Input } from '@mui/joy';
 import { customAlphabet } from 'nanoid';
 import { useState } from 'react';
-import { Point, TreeData, TreeModified } from '../types/types';
-import { EntryWrapper } from './EntryWrapper';
-import { CIRCLE_RADIUS } from './consts';
+import { isNil } from 'lodash';
+import { TreeData, TreeModified } from '../types/types';
 import { EntryWithBox } from './EntryWithBox';
 
 // TODO: Share with the other usages
@@ -20,23 +19,36 @@ export const Modified = ({
 }) => {
   const [message, setMessage] = useState<string>();
   const [branch, setBranch] = useState<string>();
+  const [checkedFiles, setCheckedFiles] = useState<Set<string>>(
+    new Set(entry.dirtyFiles),
+  );
   return (
     <EntryWithBox>
       <div
         style={{
           fontSize: '18px',
-          // lineHeight: '26px', // Should be height of largest element
-          // margin: '0',
           color: 'rgb(188 192 196)',
           fontWeight: 'bold',
           marginBottom: '10px',
         }}
       >
-        Changes
+        Changes {entry.branches}
       </div>
       {entry.dirtyFiles.map((file) => (
         <div key={file}>
-          <Checkbox label={file} defaultChecked />
+          <Checkbox
+            label={file}
+            defaultChecked
+            onChange={(evt) => {
+              if (evt.currentTarget.checked) {
+                setCheckedFiles((prev) => new Set([...prev, file]));
+              } else {
+                setCheckedFiles(
+                  (prev) => new Set([...prev].filter((x) => x !== file)),
+                );
+              }
+            }}
+          />
         </div>
       ))}
       <Input
@@ -53,9 +65,6 @@ export const Modified = ({
       <div style={{ display: 'flex' }}>
         <Input
           style={{
-            // marginTop: '15px',
-            // marginBottom: '15px',
-            // maxWidth: '200px',
             float: 'left',
             flexGrow: 1,
           }}
@@ -68,12 +77,7 @@ export const Modified = ({
         <ButtonGroup style={{ float: 'left', marginLeft: '15px' }}>
           <Button
             onClick={async () => {
-              // await window.electron.runCommands([
-              // 'git add .',
-              // 'git -c core.editor=true rebase --continue',
-              // ]);
               window.electron.runCommands([
-                // TODO: Customize branch name
                 {
                   cmd: 'git',
                   args: [
@@ -83,7 +87,7 @@ export const Modified = ({
                   ],
                 },
                 // TODO: Respect checked files
-                { cmd: 'git', args: ['add', '.'] },
+                { cmd: 'git', args: ['add', ...checkedFiles] },
                 {
                   cmd: 'git',
                   args: [
@@ -98,7 +102,27 @@ export const Modified = ({
           >
             Commit
           </Button>
-          <Button onClick={() => {}}>Amend</Button>
+          <Button
+            onClick={() => {
+              window.electron.runCommands([
+                { cmd: 'git', args: ['add', ...checkedFiles] },
+                {
+                  cmd: 'git',
+                  args: [
+                    'commit',
+                    '--allow-empty-message',
+                    ...(!isNil(message) && message.length > 0
+                      ? ['-m', message]
+                      : ['--no-edit']),
+                    '--amend',
+                    ...checkedFiles,
+                  ],
+                },
+              ]);
+            }}
+          >
+            Amend
+          </Button>
           <Button
             onClick={() => {
               // TODO: Respect checked files

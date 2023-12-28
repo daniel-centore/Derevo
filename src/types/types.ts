@@ -27,6 +27,7 @@ export type TreeRebase = {
 export type TreeModified = {
   type: 'modified';
   dirtyFiles: string[];
+  branches: string[];
 };
 
 export type TreeEntry = TreeCommit | TreeRebase | TreeModified;
