@@ -177,7 +177,7 @@ export const Commit = (props: Props) => {
             const checkedOut = treeData.currentBranch === branch;
             return (
               <HasMenu
-              key={branch}
+                key={branch}
                 menuItems={[
                   {
                     label: 'Rebase',
@@ -224,6 +224,13 @@ export const Commit = (props: Props) => {
                     // `git -c advice.detachedHead=false checkout ${meta.oid}`,
                     `git branch derevo-${nanoid()} ${meta.oid}`,
                   ]);
+                },
+              },
+              {
+                label: 'Rebase',
+                disabled: meta.onMainBranch,
+                onClick: () => {
+                  setRebase(meta.oid);
                 },
               },
             ]}

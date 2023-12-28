@@ -251,18 +251,16 @@ export const performRebase = async ({
       });
     }
 
+    // This checks out the commit of the temp branch, so it's not on the branch
+    // eslint-disable-next-line no-await-in-loop
+    await spawn({
+      cmd: `git checkout ${tempBranchName} && git checkout head`,
+      dir,
+      mainWindow,
+    });
+
     // Don't want to delete the branch if the commit will disappear
     if (from.metadata.branches.length > 0 || from.branchSplits.length > 0) {
-      // Need to check out a branch other than the temp one
-      // eslint-disable-next-line no-await-in-loop
-      await spawn({
-        cmd: `git checkout ${
-          goalBranches.length > 0 ? goalBranches[0] : 'head'
-        }`,
-        dir,
-        mainWindow,
-      });
-
       // eslint-disable-next-line no-await-in-loop
       await spawn({ cmd: `git branch -D ${tempBranchName}`, dir, mainWindow });
     }

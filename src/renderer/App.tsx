@@ -68,7 +68,10 @@ const Main = () => {
             onClick={() => {
               // TODO: Main branch name
               // TODO: origin name
-              window.electron.runCommands(['git pull origin main']);
+              window.electron.runCommands([
+                'git checkout main',
+                'git pull origin main',
+              ]);
             }}
           >
             Pull main
