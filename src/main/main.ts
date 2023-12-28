@@ -21,7 +21,7 @@ import {
   reloadGitTree,
 } from './gitlib/git-tree';
 import { abortRebase, performRebase } from './gitlib/git-write';
-import { TreeCommit } from '../types/types';
+import { Command, TreeCommit } from '../types/types';
 import { spawnTerminal, terminalIn } from './gitlib/terminal';
 
 class AppUpdater {
@@ -45,9 +45,9 @@ ipcMain.handle('stress-test', async () => {
   if (!mainWindow) {
     return;
   }
-  for (let i = 1; i <= 1000; i++) {
+  for (let i = 1; i <= 100; i++) {
     await spawnTerminal({
-      cmd: `echo hello ${i}`,
+      command: { cmd: 'echo', args: [`hello ${i}`] },
       dir: '/Users/dcentore/Desktop/',
       mainWindow,
     });
@@ -61,8 +61,8 @@ ipcMain.handle('run-cmds', async (_event, data) => {
     return;
   }
 
-  for (const cmd of data as string[]) {
-    const returnValue = await spawnTerminal({ cmd, dir, mainWindow });
+  for (const command of data as Command[]) {
+    const returnValue = await spawnTerminal({ command, dir, mainWindow });
     if (returnValue !== 0) {
       return;
     }

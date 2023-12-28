@@ -7,8 +7,8 @@ import { EntryWithBox } from './EntryWithBox';
 export const Rebase = ({
   // commit,
   treeRebase, // rebase,
-  // treeData,
-} // loc, // isRebase,
+  // loc, // isRebase,
+} // treeData,
 // setRebase,
 : {
   // commit: TreeCommit;
@@ -57,12 +57,15 @@ export const Rebase = ({
             variant="solid"
             onClick={async () => {
               await window.electron.runCommands([
-                'git add .',
+                { cmd: 'git', args: ['add', '.'] },
                 // This is a kludge which forces the creation of an empty commit if
                 // the rebase results in no changes
                 // See https://stackoverflow.com/a/45693978/998251
-                'git commit --allow-empty --no-edit',
-                'git -c core.editor=true rebase --continue',
+                { cmd: 'git', args: ['commit', '--allow-empty', '--no-edit'] },
+                {
+                  cmd: 'git',
+                  args: ['-c', 'core.editor=true', 'rebase', '--continue'],
+                },
               ]);
             }}
           >

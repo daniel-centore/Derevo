@@ -74,11 +74,25 @@ export const Modified = ({
               // ]);
               window.electron.runCommands([
                 // TODO: Customize branch name
-                `git checkout -b ${branch ? branch : `derevo-${nanoid()}`}`,
+                {
+                  cmd: 'git',
+                  args: [
+                    'checkout',
+                    '-b',
+                    branch ? branch : `derevo-${nanoid()}`,
+                  ],
+                },
                 // TODO: Respect checked files
-                'git add .',
-                // TODO: Escape the message properly
-                `git commit -m "${message}"`,
+                { cmd: 'git', args: ['add', '.'] },
+                {
+                  cmd: 'git',
+                  args: [
+                    'commit',
+                    '--allow-empty-message',
+                    '-m',
+                    message ?? '',
+                  ],
+                },
               ]);
             }}
           >
@@ -89,7 +103,7 @@ export const Modified = ({
             onClick={() => {
               // TODO: Respect checked files
               // TODO: Add stash message
-              window.electron.runCommands(['git stash']);
+              window.electron.runCommands([{ cmd: 'git', args: ['stash'] }]);
             }}
           >
             Stash

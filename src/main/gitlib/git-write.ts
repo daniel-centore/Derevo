@@ -56,7 +56,11 @@ export const abortRebase = async ({
 
   setRebaseStatus('cancel-requested');
 
-  await spawnTerminal({ cmd: 'git rebase --abort', dir, mainWindow });
+  await spawnTerminal({
+    command: { cmd: 'git', args: ['rebase', '--abort'] },
+    dir,
+    mainWindow,
+  });
 
   // Delete any tmp branches around
   const branches = await git.listBranches({ fs, dir });
@@ -65,19 +69,27 @@ export const abortRebase = async ({
   );
   if (branchesToDelete.length > 0) {
     await spawnTerminal({
-      cmd: 'git checkout head',
+      command: { cmd: 'git', args: ['checkout', 'head'] },
       dir,
       mainWindow,
     });
     await spawnTerminal({
-      cmd: `git branch -D ${branchesToDelete.join(' ')}`,
+      command: { cmd: 'git', args: ['branch', '-D', ...branchesToDelete] },
       dir,
       mainWindow,
     });
   }
 
   await spawnTerminal({
-    cmd: `git -c advice.detachedHead=false checkout ${rebaseInitialFrom()}`,
+    command: {
+      cmd: 'git',
+      args: [
+        '-c',
+        'advice.detachedHead=false',
+        'checkout',
+        rebaseInitialFrom(),
+      ],
+    },
     dir,
     mainWindow,
   });
@@ -106,7 +118,10 @@ const performRebaseHelper = async ({
   // TODO: Handle situation when a commit has multiple branches
   const tempBranchName = `${TEMP_BRANCH_PREFIX}${nanoid()}`;
   await spawnTerminal({
-    cmd: `git branch --no-track ${tempBranchName} ${from.metadata.oid}`,
+    command: {
+      cmd: 'git',
+      args: ['branch', '--no-track', tempBranchName, from.metadata.oid],
+    },
     dir,
     mainWindow,
   });
@@ -118,7 +133,10 @@ const performRebaseHelper = async ({
 
   const fromBranch = tempBranchName;
   const returnValue = await spawnTerminal({
-    cmd: `git rebase --onto ${to} ${fromBranch}~ ${fromBranch}`,
+    command: {
+      cmd: 'git',
+      args: ['rebase', '--onto', to, `${fromBranch}~`, fromBranch],
+    },
     dir,
     mainWindow,
   });
@@ -190,7 +208,10 @@ export const performRebase = async ({
     for (const goalBranch of goalBranches) {
       // eslint-disable-next-line no-await-in-loop
       await spawnTerminal({
-        cmd: `git branch --force ${goalBranch} ${tempBranchName}`,
+        command: {
+          cmd: 'git',
+          args: ['branch', '--force', goalBranch, tempBranchName],
+        },
         dir,
         mainWindow,
       });
@@ -199,7 +220,19 @@ export const performRebase = async ({
     // This checks out the commit of the temp branch, so it's not on the branch
     // eslint-disable-next-line no-await-in-loop
     await spawnTerminal({
-      cmd: `git checkout ${tempBranchName} && git checkout head`,
+      command: {
+        cmd: 'git',
+        args: ['checkout', 'tempBranchName'],
+      },
+      dir,
+      mainWindow,
+    });
+    // eslint-disable-next-line no-await-in-loop
+    await spawnTerminal({
+      command: {
+        cmd: 'git',
+        args: ['checkout', 'head'],
+      },
       dir,
       mainWindow,
     });
@@ -207,11 +240,17 @@ export const performRebase = async ({
     // Don't want to delete the branch if the commit will disappear
     if (from.metadata.branches.length > 0 || from.branchSplits.length > 0) {
       // eslint-disable-next-line no-await-in-loop
-      await spawnTerminal({ cmd: `git branch -D ${tempBranchName}`, dir, mainWindow });
+      await spawnTerminal({
+        command: {
+          cmd: 'git',
+          args: ['branch', '-D', tempBranchName],
+        },
+        dir,
+        mainWindow,
+      });
     }
   }
 
   setRebaseStatus('stopped');
   await reloadGitTree({ mainWindow });
 };
-

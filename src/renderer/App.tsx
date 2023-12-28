@@ -58,7 +58,7 @@ const Main = () => {
         <ButtonGroup>
           <Button
             onClick={() => {
-              window.electron.runCommands(['git fetch']);
+              window.electron.runCommands([{ cmd: 'git', args: ['fetch'] },]);
             }}
           >
             Fetch
@@ -69,8 +69,8 @@ const Main = () => {
               // TODO: Main branch name
               // TODO: origin name
               window.electron.runCommands([
-                'git checkout main',
-                'git pull origin main',
+                { cmd: 'git', args: ['checkout', 'main'] },
+                { cmd: 'git', args: ['pull', 'origin', 'main'] },
               ]);
             }}
           >
@@ -81,7 +81,7 @@ const Main = () => {
             onClick={() => {
               // TODO: Main branch name
               // TODO: origin name
-              window.electron.runCommands(['git pull']);
+              window.electron.runCommands([{ cmd: 'git', args: ['pull'] },]);
             }}
           >
             Pull current
@@ -89,7 +89,7 @@ const Main = () => {
           <Button
             disabled={!treeData || treeData.stashEntries === 0}
             onClick={() => {
-              window.electron.runCommands(['git stash clear']);
+              window.electron.runCommands([{ cmd: 'git', args: ['stash', 'clear'] },]);
             }}
           >
             Stash clear
@@ -106,7 +106,7 @@ const Main = () => {
           </Button>
           <Button
             onClick={() => {
-              window.electron.runCommands(['vim']);
+              window.electron.runCommands([{ cmd: 'vim', args: [] },]);
             }}
           >
             Vim

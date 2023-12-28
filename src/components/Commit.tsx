@@ -103,9 +103,14 @@ const getButtons = ({
           // TODO: Delete current branch first
           // TODO: Can we pre-populate the "Changes" dialogue which pops up afterward?
           await window.electron.runCommands([
-            'git checkout head',
-            `git branch -D ${meta.branches.join(' ')}`,
-            'git reset --soft HEAD~',
+            {
+              cmd: 'git',
+              args: ['-c', 'advice.detachedHead=false', 'checkout', 'head'],
+            },
+            ...(meta.branches.length === 0
+              ? []
+              : [{ cmd: 'git', args: ['branch', '-D', ...meta.branches] }]),
+            { cmd: 'git', args: ['reset', '--soft', 'HEAD~'] },
           ]);
         }}
       >
@@ -122,7 +127,7 @@ const getButtons = ({
     buttons.push(
       <Button
         onClick={() => {
-          window.electron.runCommands(['git stash pop']);
+          window.electron.runCommands([{ cmd: 'git', args: ['stash', 'pop'] }]);
         }}
       >
         Stash pop
@@ -156,7 +161,10 @@ export const Commit = (props: Props) => {
           return;
         }
         await window.electron.runCommands([
-          `git -c advice.detachedHead=false checkout ${meta.oid}`,
+          {
+            cmd: 'git',
+            args: ['-c', 'advice.detachedHead=false', 'checkout', meta.oid],
+          },
         ]);
       }}
     >
@@ -190,7 +198,9 @@ export const Commit = (props: Props) => {
                     label: 'Delete Branch',
                     disabled: checkedOut || treeData.mainBranch === branch,
                     onClick: () => {
-                      window.electron.runCommands([`git branch -D ${branch}`]);
+                      window.electron.runCommands([
+                        { cmd: 'git', args: ['branch', '-D', branch] },
+                      ]);
                     },
                   },
                 ]}
@@ -205,7 +215,7 @@ export const Commit = (props: Props) => {
                       return;
                     }
                     window.electron.runCommands([
-                      `git -c advice.detachedHead=false checkout ${branch}`,
+                      { cmd: 'git', args: ['checkout', branch] },
                     ]);
                   }}
                 >
@@ -221,8 +231,10 @@ export const Commit = (props: Props) => {
                 label: 'Create branch',
                 onClick: () => {
                   window.electron.runCommands([
-                    // `git -c advice.detachedHead=false checkout ${meta.oid}`,
-                    `git branch derevo-${nanoid()} ${meta.oid}`,
+                    {
+                      cmd: 'git',
+                      args: ['branch', `derevo-${nanoid()}`, meta.oid],
+                    },
                   ]);
                 },
               },
@@ -244,7 +256,15 @@ export const Commit = (props: Props) => {
                   return;
                 }
                 window.electron.runCommands([
-                  `git -c advice.detachedHead=false checkout ${meta.oid}`,
+                  {
+                    cmd: 'git',
+                    args: [
+                      '-c',
+                      'advice.detachedHead=false',
+                      'checkout',
+                      meta.oid,
+                    ],
+                  },
                 ]);
               }}
             >

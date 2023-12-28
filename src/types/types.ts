@@ -1,3 +1,5 @@
+export type Command = { cmd: string; args: string[] };
+
 export type RebaseStatus = 'in-progress' | 'cancel-requested' | 'stopped';
 
 export type CommitMetadata = {

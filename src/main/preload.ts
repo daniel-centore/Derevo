@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import { TreeCommit } from '../types/types';
+import { Command, TreeCommit } from '../types/types';
 
 // export type Channels = 'ipc-example' | 'extractGitTree';
 
@@ -7,7 +7,7 @@ const electronHandler = {
   invoke: (channel: string, ...args: unknown[]) => {
     return ipcRenderer.invoke(channel, args);
   },
-  runCommands: (cmds: string[]) => {
+  runCommands: (cmds: Command[]) => {
     return ipcRenderer.invoke('run-cmds', cmds);
   },
   rebase: (args: { from: TreeCommit; to: string }) => {
