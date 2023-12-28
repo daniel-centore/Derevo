@@ -1,13 +1,14 @@
-import { Button } from '@mui/joy';
+import { Button, ButtonGroup } from '@mui/joy';
 import { Point, TreeCommit, TreeData, TreeRebase } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { CIRCLE_RADIUS } from './consts';
+import { EntryWithBox } from './EntryWithBox';
 
 export const Rebase = ({
   // commit,
   treeRebase, // rebase,
-  // loc, // isRebase,
-} // treeData,
+  // treeData,
+} // loc, // isRebase,
 // setRebase,
 : {
   // commit: TreeCommit;
@@ -19,34 +20,41 @@ export const Rebase = ({
   // setRebase: (oid: string | undefined) => void;
 }) => {
   return (
-    <EntryWrapper circleColor="cyan">
+    <EntryWithBox>
       <div
         style={{
-          marginLeft: '20px',
-          paddingLeft: '5px',
-          paddingRight: '5px',
-          backgroundColor: 'rgb(50 50 50)',
+          fontSize: '14px',
+          lineHeight: '26px', // Should be height of largest element
+          margin: '0',
+          color: 'rgb(188 192 196)',
+          fontWeight: 'bold',
         }}
       >
+        Rebase in Progress
         <div
           style={{
-            fontSize: '14px',
-            lineHeight: '26px', // Should be height of largest element
-            margin: '0',
-            color: 'rgb(188 192 196)',
-            fontWeight: 'bold',
+            marginTop: '10px',
+            marginBottom: '20px',
+            marginLeft: '10px',
           }}
         >
-          Rebase in Progress
-          <br />
-          Dirty: {treeRebase.dirtyFiles.join(', ')}
-          <br />
-          Conflicts: {treeRebase.conflictedFiles.join(', ')}
+          {treeRebase.dirtyFiles.map((file) => {
+            const emoji = treeRebase.conflictedFiles.includes(file)
+              ? '🟡'
+              : '✅';
+            return (
+              <div>
+                {emoji} {file}
+              </div>
+            );
+          })}
         </div>
+      </div>
+      <ButtonGroup>
         {treeRebase.conflictedFiles.length === 0 && (
           <Button
-            variant="outlined"
-            style={{ marginTop: '7px' }}
+            color="primary"
+            variant="solid"
             onClick={async () => {
               await window.electron.runCommands([
                 'git add .',
@@ -62,16 +70,14 @@ export const Rebase = ({
           </Button>
         )}
         <Button
-          variant="outlined"
-          style={{ marginTop: '7px' }}
           onClick={async () => {
             await window.electron.invoke('abort-rebase');
           }}
         >
           Abort
         </Button>
-        {/* TODO: Abort button */}
-      </div>
-    </EntryWrapper>
+      </ButtonGroup>
+      {/* TODO: Abort button */}
+    </EntryWithBox>
   );
 };

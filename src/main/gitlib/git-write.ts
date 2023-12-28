@@ -71,8 +71,7 @@ export const spawn = async ({
   }
 
   // const shPath = await shellPath();
-  const platformShell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-  ptyProcess = pty.spawn(platformShell, ['-c', cmd], {
+  ptyProcess = pty.spawn('bash', ['-c', cmd], {
     name: 'xterm-color',
     cols: 80,
     rows: 10,
@@ -185,6 +184,7 @@ const performRebaseHelper = async ({
         return;
       }
 
+      await reloadGitTree({ mainWindow });
       const rebasing = await rebaseInProgress(dir);
       if (!rebasing) {
         waitingForRebaseComplete = false;

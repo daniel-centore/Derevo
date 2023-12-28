@@ -386,8 +386,14 @@ export const Tree = ({
     }
   }, [rebase, treeData]);
 
+
   if (!treeData?.rootCommit) {
     return <p>No data</p>;
+  }
+
+  if (treeData.dirty && rebase) {
+    // Cancel rebase if there are modifications
+    setRebase(undefined);
   }
   // const chunk = createTreeChunk({
   //   root: treeData.rootCommit,

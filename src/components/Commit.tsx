@@ -231,7 +231,7 @@ export const Commit = (props: Props) => {
             <Chip
               style={{ marginRight: '7px' }}
               variant="solid"
-              color="danger"
+              color="warning"
               onClick={() => {
                 if (disableCheckout) {
                   return;

@@ -45,6 +45,15 @@ ipcMain.handle('extract-git-tree', async () => {
   await reloadGitTree({ mainWindow });
 });
 
+ipcMain.handle('stress-test', async () => {
+  if (!mainWindow) {
+    return;
+  }
+  for (let i = 1; i <= 1000; i++) {
+    await spawn({ cmd: `echo hello ${i}`, dir: '~', mainWindow });
+  }
+});
+
 ipcMain.handle('run-cmds', async (_event, data) => {
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
 

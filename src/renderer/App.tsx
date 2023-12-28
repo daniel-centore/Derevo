@@ -94,6 +94,13 @@ const Main = () => {
               ? ` (${treeData?.stashEntries})`
               : ''}
           </Button>
+          <Button
+            onClick={() => {
+              window.electron.invoke('stress-test');
+            }}
+          >
+            Stress Test
+          </Button>
         </ButtonGroup>
       </div>
       <div slot="start" style={{ flexGrow: 1, overflowY: 'scroll' }}>
