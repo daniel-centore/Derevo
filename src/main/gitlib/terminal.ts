@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron';
+import { isNil, omitBy, pickBy } from 'lodash';
 import * as pty from 'node-pty';
 
 let ptyProcess: pty.IPty | null = null;
@@ -30,7 +31,7 @@ export const spawnTerminal = async ({
     rows: 10,
     cwd: dir,
     // TODO: Fix path
-    env: { ...process.env },
+    // env: process.env,
   });
 
   mainWindow?.webContents.send('terminal-out', `${cmd}\r\n`);

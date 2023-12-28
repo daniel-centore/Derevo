@@ -20,10 +20,7 @@ import {
   extractGitTree,
   reloadGitTree,
 } from './gitlib/git-tree';
-import {
-  abortRebase,
-  performRebase,
-} from './gitlib/git-write';
+import { abortRebase, performRebase } from './gitlib/git-write';
 import { TreeCommit } from '../types/types';
 import { spawnTerminal, terminalIn } from './gitlib/terminal';
 
@@ -49,7 +46,11 @@ ipcMain.handle('stress-test', async () => {
     return;
   }
   for (let i = 1; i <= 1000; i++) {
-    await spawnTerminal({ cmd: `echo hello ${i}`, dir: '~', mainWindow });
+    await spawnTerminal({
+      cmd: `echo hello ${i}`,
+      dir: '/Users/dcentore/Desktop/',
+      mainWindow,
+    });
   }
 });
 
