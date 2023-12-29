@@ -1,4 +1,5 @@
 import { Button, ButtonGroup } from '@mui/joy';
+import { shell } from 'electron';
 import { Point, TreeCommit, TreeData, TreeRebase } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { CIRCLE_RADIUS } from './consts';
@@ -19,6 +20,8 @@ export const Rebase = ({
   // rebase: string | undefined;
   // setRebase: (oid: string | undefined) => void;
 }) => {
+  // TODO: Replace dir
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
   return (
     <EntryWithBox>
       <div
@@ -42,10 +45,17 @@ export const Rebase = ({
             const emoji = treeRebase.conflictedFiles.includes(file)
               ? '🟡'
               : '✅';
+            const vscodeLink = `vscode://file${dir}/${file}`;
             return (
-              <div>
-                {emoji} {file}
-              </div>
+              <Button
+                startDecorator={emoji}
+                variant="plain"
+                onClick={() => {
+                  window.electron.openExternal(vscodeLink);
+                }}
+              >
+                {file}
+              </Button>
             );
           })}
         </div>

@@ -9,6 +9,7 @@ export type CommitMetadata = {
   branches: string[];
   onMainBranch: boolean;
   authorTs: Date;
+  commitTs: Date;
 };
 
 export type TreeCommit = {

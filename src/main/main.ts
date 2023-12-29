@@ -54,6 +54,10 @@ ipcMain.handle('stress-test', async () => {
   }
 });
 
+ipcMain.handle('open-external', async (_event, data) => {
+  await shell.openExternal(data, { activate: true });
+});
+
 ipcMain.handle('run-cmds', async (_event, data) => {
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
 

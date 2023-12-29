@@ -142,6 +142,8 @@ const getButtons = ({
 };
 
 export const Commit = (props: Props) => {
+  // TODO: --no-verify checkbox
+  // TODO: Clear inputs after commit successfully completes
   const { commit, treeData, isRebase, rebase, setRebase } = props;
   const meta = commit.metadata;
   let circleColor = 'grey';
@@ -196,9 +198,12 @@ export const Commit = (props: Props) => {
                   },
                   {
                     label: 'Delete Branch',
-                    disabled: checkedOut || treeData.mainBranch === branch,
+                    disabled: treeData.mainBranch === branch,
                     onClick: () => {
                       window.electron.runCommands([
+                        ...(checkedOut
+                          ? [{ cmd: 'git', args: ['checkout', 'head'] }]
+                          : []),
                         { cmd: 'git', args: ['branch', '-D', branch] },
                       ]);
                     },
@@ -272,10 +277,6 @@ export const Commit = (props: Props) => {
             </Chip>
           </HasMenu>
         )}
-        {/* <span style={{ backgroundColor: 'grey', color: 'black' }}>
-          {meta.branches.length > 0 && `[${meta.branches.join(', ')}]`}
-          {meta.branches.length === 0 && !meta.mainBranch && '[NO BRANCH]'}
-        </span>{' '} */}
         {meta.title}
         <ButtonGroup style={{ float: 'right', marginLeft: '15px' }} size="sm">
           {getButtons(props)}

@@ -17,22 +17,21 @@ export const Modified = ({
   entry: TreeModified;
   treeData: TreeData;
 }) => {
+  // TODO: Auto-populate branch field based on title, eliminating stopwords
   const [message, setMessage] = useState<string>();
   const [branch, setBranch] = useState<string>();
   const [checkedFileMap, setCheckedFileMap] = useState<Record<string, boolean>>(
     {},
   );
   useEffect(() => {
-    const newEntries = entry.dirtyFiles
-      .filter((file) => !(file in checkedFileMap))
-      .reduce(
-        (prev, file) => ({ ...prev, [file]: true }),
-        {} as Record<string, boolean>,
-      );
-    setCheckedFileMap({
-      ...checkedFileMap,
-      ...newEntries,
-    });
+    const entries = entry.dirtyFiles.reduce(
+      (prev, file) => ({
+        ...prev,
+        [file]: file in checkedFileMap ? checkedFileMap[file] : true,
+      }),
+      {} as Record<string, boolean>,
+    );
+    setCheckedFileMap(entries);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entry.dirtyFiles]);
 
@@ -50,7 +49,7 @@ export const Modified = ({
           marginBottom: '10px',
         }}
       >
-        Changes {[...checkedFiles].join(', ')}
+        Changes
       </div>
       {entry.dirtyFiles.map((file) => (
         <div key={file}>
@@ -92,6 +91,8 @@ export const Modified = ({
         />
         <ButtonGroup style={{ float: 'left', marginLeft: '15px' }}>
           <Button
+            color="primary"
+            variant="solid"
             onClick={async () => {
               window.electron.runCommands([
                 {
@@ -119,8 +120,8 @@ export const Modified = ({
             Commit
           </Button>
           <Button
-            onClick={() => {
-              window.electron.runCommands([
+            onClick={async () => {
+              await window.electron.runCommands([
                 { cmd: 'git', args: ['add', ...checkedFiles] },
                 {
                   cmd: 'git',
@@ -140,6 +141,16 @@ export const Modified = ({
                   args: ['branch', '--force', br, 'head'],
                 })),
               ]);
+              // TODO: git commit --no-verify any remaining modified files. Give it a branch name (e.g. derevo-temp)
+              // TODO: Rebase the rest of the existing stack on top of the modified commit
+              // TODO: Uncommit derevo-temp
+
+              // TODO: If aborted during the rebase, make sure to still do the uncommit afterwards!
+
+              // await window.electron.rebase({
+              //   from: fromRoot,
+              //   to: toRoot.metadata.oid,
+              // });
             }}
           >
             Amend
@@ -148,6 +159,7 @@ export const Modified = ({
             onClick={() => {
               // TODO: Add stash message
               window.electron.runCommands([
+                { cmd: 'git', args: ['add', ...checkedFiles] },
                 { cmd: 'git', args: ['stash', 'push', ...checkedFiles] },
               ]);
             }}

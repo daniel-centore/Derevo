@@ -24,6 +24,7 @@ const rawCommitToMeta = ({
   active: rawCommit.oid === activeCommit,
   onMainBranch: mainBranch,
   authorTs: new Date(rawCommit.commit.author.timestamp * 1000),
+  commitTs: new Date(rawCommit.commit.committer.timestamp * 1000),
 });
 
 const stashList = async () => {
@@ -122,9 +123,6 @@ export const extractGitTree = async (): Promise<TreeData> => {
         // eslint-disable-next-line no-await-in-loop
         const unmergedFiles = await getModifiedFiles(dir);
         console.log({ unmergedFiles });
-        const unmergedFilenames = unmergedFiles
-          .filter((x) => x.status !== 'added, staged')
-          .map((x) => x.filename);
 
         // console.log({ unmergedFiles });
 
@@ -147,6 +145,11 @@ export const extractGitTree = async (): Promise<TreeData> => {
         }
 
         if (rebaseFolderExists) {
+          const unmergedFilenames = unmergedFiles
+            // These are files which changed as part of the rebase but didn't have conflicts
+            // They should be excluded from the view
+            .filter((x) => x.status !== 'added, staged')
+            .map((x) => x.filename);
           const readFilePromise = util.promisify(fs.readFile);
           const conflictedFiles = [];
           for (const file of unmergedFilenames) {
@@ -163,7 +166,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
             conflictedFiles,
           });
         } else if (unmergedFiles.length > 0) {
-          // TODO: Handle non-rebase situation
+          const unmergedFilenames = unmergedFiles.map((x) => x.filename);
           commit.branchSplits.push({
             type: 'modified',
             dirtyFiles: unmergedFilenames,

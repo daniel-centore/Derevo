@@ -13,6 +13,9 @@ const electronHandler = {
   rebase: (args: { from: TreeCommit; to: string }) => {
     return ipcRenderer.invoke('rebase', args);
   },
+  openExternal: (url: string) => {
+    return ipcRenderer.invoke('open-external', url);
+  },
   // sendMessage(channel: Channels, ...args: unknown[]) {
   //   ipcRenderer.send(channel, ...args);
   // },
