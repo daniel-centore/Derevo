@@ -373,11 +373,7 @@ const TreeChunk = ({
 // const HEIGHT_OFFSET = COMMIT_HEIGHT / 2;
 // const WIDTH = 900; // TODO: Can we do better?
 
-export const Tree = ({
-  treeData,
-}: {
-  treeData: TreeData;
-}) => {
+export const Tree = ({ treeData }: { treeData: TreeData }) => {
   const [rebase, setRebase] = useState<string>();
 
   useEffect(() => {
@@ -385,7 +381,6 @@ export const Tree = ({
       setRebase(undefined);
     }
   }, [rebase, treeData]);
-
 
   if (!treeData?.rootCommit) {
     return <p>No data</p>;

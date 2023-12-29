@@ -25,9 +25,14 @@ export type TreeRebase = {
   conflictedFiles: string[];
 };
 
+export type ChangeType = 'new' | 'deleted' | 'modified';
+
 export type TreeModified = {
   type: 'modified';
-  dirtyFiles: string[];
+  dirtyFiles: {
+    filename: string;
+    change: ChangeType;
+  }[];
   branches: string[];
 };
 

@@ -2,6 +2,7 @@ import util from 'util';
 import { exec } from 'child_process';
 import fs from 'fs';
 import git from 'isomorphic-git';
+import { ChangeType } from '../../types/types';
 
 export const getModifiedFiles = async (
   dir: string,
@@ -27,6 +28,20 @@ export const getModifiedFiles = async (
     '123': 'modified, staged, with unstaged changes',
   };
 
+  const statusToModifiedMapping: Record<string, ChangeType | null> = {
+    '003': null,
+    '020': 'new',
+    '022': 'new',
+    '023': 'new',
+    '100': 'deleted',
+    '101': 'deleted',
+    '103': 'modified',
+    '111': null,
+    '121': 'modified',
+    '122': 'modified',
+    '123': 'modified',
+  };
+
   const statusMatrix = (await git.statusMatrix({ fs, dir })).filter(
     (row) => row[HEAD] !== row[WORKDIR] || row[HEAD] !== row[STAGE],
   );
@@ -35,7 +50,9 @@ export const getModifiedFiles = async (
     // (row) => `${statusMapping[row.slice(1).join('')]}: ${row[FILE]}`,
     (row) => ({
       filename: row[FILE],
+      // TODO: Use something better than the status
       status: statusMapping[row.slice(1).join('')],
+      change: statusToModifiedMapping[row.slice(1).join('')],
     }),
   );
 

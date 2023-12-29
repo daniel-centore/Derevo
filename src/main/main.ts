@@ -13,6 +13,9 @@ import electron, { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 // import { shellPath } from 'shell-path';
+// import trash from 'trash';
+import { unlink } from 'node:fs';
+import util from 'util';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import {
@@ -22,7 +25,7 @@ import {
 } from './gitlib/git-tree';
 import { abortRebase, performRebase } from './gitlib/git-write';
 import { Command, TreeCommit } from '../types/types';
-import { spawnTerminal, terminalIn } from './gitlib/terminal';
+import { escapeShellArg, fakeCommand, spawnTerminal, terminalIn, terminalOut } from './gitlib/terminal';
 
 class AppUpdater {
   constructor() {
@@ -71,10 +74,26 @@ ipcMain.handle('run-cmds', async (_event, data) => {
       return;
     }
 
-    // eslint-disable-next-line no-await-in-loop
-    const result = await extractGitTree();
-    mainWindow?.webContents.send('git-tree-updated', result);
+    await reloadGitTree({ mainWindow });
   }
+});
+
+ipcMain.handle('delete', async (_, files: string[]) => {
+  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+
+  if (!mainWindow || files.length === 0) {
+    return;
+  }
+
+  const unlinkPromise = util.promisify(unlink);
+  await Promise.all(files.map((file) => unlinkPromise(`${dir}/${file}`)));
+
+  fakeCommand({
+    mainWindow,
+    cmd: `rm ${files.map((file) => escapeShellArg(file)).join(' ')}`,
+  });
+
+  await reloadGitTree({ mainWindow });
 });
 
 ipcMain.handle('rebase', async (_, data) => {

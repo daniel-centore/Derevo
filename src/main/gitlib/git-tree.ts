@@ -3,7 +3,7 @@ import git, { ReadCommitResult } from 'isomorphic-git';
 import util from 'util';
 import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
-import { CommitMetadata, TreeCommit, TreeData } from '../../types/types';
+import { ChangeType, CommitMetadata, TreeCommit, TreeData } from '../../types/types';
 import { getModifiedFiles, rebaseInProgress } from './git-read';
 import { rebaseStatus } from './activity-status';
 
@@ -148,7 +148,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
           const unmergedFilenames = unmergedFiles
             // These are files which changed as part of the rebase but didn't have conflicts
             // They should be excluded from the view
-            .filter((x) => x.status !== 'added, staged')
+            .filter((x) => x.status.includes('unstaged'))
             .map((x) => x.filename);
           const readFilePromise = util.promisify(fs.readFile);
           const conflictedFiles = [];
@@ -166,10 +166,14 @@ export const extractGitTree = async (): Promise<TreeData> => {
             conflictedFiles,
           });
         } else if (unmergedFiles.length > 0) {
-          const unmergedFilenames = unmergedFiles.map((x) => x.filename);
+          // const unmergedFilenames = unmergedFiles.map((x) => x.filename);
           commit.branchSplits.push({
             type: 'modified',
-            dirtyFiles: unmergedFilenames,
+            dirtyFiles: unmergedFiles.filter((x) => !!x.status) as {
+              filename: string;
+              status: string;
+              change: ChangeType;
+            }[],
             branches: commit.metadata.branches,
           });
         }
@@ -211,8 +215,14 @@ export const reloadGitTree = async ({
 }: {
   mainWindow: BrowserWindow | undefined;
 }) => {
-  const result = await extractGitTree();
-  mainWindow?.webContents.send('git-tree-updated', result);
+  try {
+    const result = await extractGitTree();
+    mainWindow?.webContents.send('git-tree-updated', result);
+  } catch (e) {
+    // This happens in rare instances (usually race condition with filesystem)
+    // Just ignore it and let the tree reload automatically
+    console.error('Error reloading tree', e);
+  }
 };
 
 const REFRESH_FREQUENCY = 1000;

@@ -8,8 +8,8 @@ let ptyProcess: pty.IPty | null = null;
 /**
  * NOTE: This is only used for display purposes, it's not actually piped into bash
  */
-const escapeShellArg = (arg: string) => {
-  const simpleArg = /^[a-zA-Z\d-]*$/;
+export const escapeShellArg = (arg: string) => {
+  const simpleArg = /^[a-zA-Z\d-.]*$/;
   if (simpleArg.exec(arg)) {
     return arg;
   }
@@ -68,4 +68,24 @@ export const spawnTerminal = async ({
 
 export const terminalIn = (str: string) => {
   ptyProcess?.write(str);
+};
+
+export const terminalOut = ({
+  str,
+  mainWindow,
+}: {
+  str: string;
+  mainWindow: BrowserWindow;
+}) => {
+  mainWindow?.webContents.send('terminal-out', str);
+};
+
+export const fakeCommand = ({
+  cmd,
+  mainWindow,
+}: {
+  cmd: string;
+  mainWindow: BrowserWindow;
+}) => {
+  terminalOut({ mainWindow, str: `${cmd}\r\n\r\n> ` });
 };

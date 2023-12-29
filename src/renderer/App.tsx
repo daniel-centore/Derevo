@@ -86,7 +86,7 @@ const Main = () => {
           >
             Pull current
           </Button>
-          <Button
+          {/* <Button
             disabled={!treeData || treeData.stashEntries === 0}
             onClick={() => {
               window.electron.runCommands([{ cmd: 'git', args: ['stash', 'clear'] },]);
@@ -96,8 +96,8 @@ const Main = () => {
             {treeData && treeData.stashEntries > 0
               ? ` (${treeData?.stashEntries})`
               : ''}
-          </Button>
-          <Button
+          </Button> */}
+          {/* <Button
             onClick={() => {
               window.electron.invoke('stress-test');
             }}
@@ -110,7 +110,7 @@ const Main = () => {
             }}
           >
             Vim
-          </Button>
+          </Button> */}
         </ButtonGroup>
       </div>
       <div slot="start" style={{ flexGrow: 1, overflowY: 'scroll' }}>

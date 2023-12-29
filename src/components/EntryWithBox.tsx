@@ -1,9 +1,15 @@
 import { ReactNode } from 'react';
 import { EntryWrapper } from './EntryWrapper';
 
-export const EntryWithBox = ({ children }: { children: ReactNode }) => {
+export const EntryWithBox = ({
+  children,
+  circleColor,
+}: {
+  children: ReactNode;
+  circleColor: string;
+}) => {
   return (
-    <EntryWrapper circleColor="cyan">
+    <EntryWrapper circleColor={circleColor}>
       <div
         style={{
           marginLeft: '20px',

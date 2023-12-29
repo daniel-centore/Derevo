@@ -16,6 +16,9 @@ const electronHandler = {
   openExternal: (url: string) => {
     return ipcRenderer.invoke('open-external', url);
   },
+  delete: (files: string[]) => {
+    return ipcRenderer.invoke('delete', files);
+  },
   // sendMessage(channel: Channels, ...args: unknown[]) {
   //   ipcRenderer.send(channel, ...args);
   // },

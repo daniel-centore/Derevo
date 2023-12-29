@@ -8,8 +8,8 @@ import { EntryWithBox } from './EntryWithBox';
 export const Rebase = ({
   // commit,
   treeRebase, // rebase,
-  // loc, // isRebase,
-} // treeData,
+  // treeData,
+} // loc, // isRebase,
 // setRebase,
 : {
   // commit: TreeCommit;
@@ -23,7 +23,7 @@ export const Rebase = ({
   // TODO: Replace dir
   const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
   return (
-    <EntryWithBox>
+    <EntryWithBox circleColor="yellow">
       <div
         style={{
           fontSize: '14px',
@@ -39,6 +39,8 @@ export const Rebase = ({
             marginTop: '10px',
             marginBottom: '20px',
             marginLeft: '10px',
+            display: 'flex',
+            flexWrap: 'wrap',
           }}
         >
           {treeRebase.dirtyFiles.map((file) => {
@@ -47,15 +49,22 @@ export const Rebase = ({
               : '✅';
             const vscodeLink = `vscode://file${dir}/${file}`;
             return (
-              <Button
-                startDecorator={emoji}
-                variant="plain"
-                onClick={() => {
-                  window.electron.openExternal(vscodeLink);
+              <div
+                key={file}
+                style={{
+                  flexBasis: '100%',
                 }}
               >
-                {file}
-              </Button>
+                <Button
+                  startDecorator={emoji}
+                  variant="plain"
+                  onClick={() => {
+                    window.electron.openExternal(vscodeLink);
+                  }}
+                >
+                  {file}
+                </Button>
+              </div>
             );
           })}
         </div>
@@ -79,6 +88,7 @@ export const Rebase = ({
               ]);
             }}
           >
+            {/* TODO: Disable continue if the state has been lost */}
             Continue
           </Button>
         )}

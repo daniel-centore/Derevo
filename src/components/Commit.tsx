@@ -4,6 +4,7 @@ import { customAlphabet } from 'nanoid';
 import { TreeCommit, TreeData } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { HasMenu } from './HasMenu';
+import { TEMP_BRANCH_PREFIX } from '../types/consts';
 
 // TODO: Share with the other usages
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
@@ -153,6 +154,12 @@ export const Commit = (props: Props) => {
   if (isRebase) {
     circleColor = 'red';
   }
+  if (
+    commit.metadata.branches.length === 1 &&
+    commit.metadata.branches.some((x) => x.startsWith(TEMP_BRANCH_PREFIX))
+  ) {
+    circleColor = 'yellow';
+  }
   const disableCheckout = !!(rebase || treeData.dirty);
   return (
     <EntryWrapper
@@ -191,14 +198,14 @@ export const Commit = (props: Props) => {
                 menuItems={[
                   {
                     label: 'Rebase →',
-                    disabled: meta.onMainBranch,
+                    disabled: meta.onMainBranch || !!rebase,
                     onClick: () => {
                       setRebase(meta.oid);
                     },
                   },
                   {
                     label: 'Delete Branch',
-                    disabled: treeData.mainBranch === branch,
+                    disabled: treeData.mainBranch === branch || !!rebase,
                     onClick: () => {
                       window.electron.runCommands([
                         ...(checkedOut
