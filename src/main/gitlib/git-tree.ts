@@ -3,9 +3,15 @@ import git, { ReadCommitResult } from 'isomorphic-git';
 import util from 'util';
 import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
-import { ChangeType, CommitMetadata, TreeCommit, TreeData } from '../../types/types';
+import {
+  ChangeType,
+  CommitMetadata,
+  TreeCommit,
+  TreeData,
+} from '../../types/types';
 import { getModifiedFiles, rebaseInProgress } from './git-read';
 import { rebaseStatus } from './activity-status';
+import { getCwd } from '../app-settings';
 
 const rawCommitToMeta = ({
   rawCommit,
@@ -27,10 +33,7 @@ const rawCommitToMeta = ({
   commitTs: new Date(rawCommit.commit.committer.timestamp * 1000),
 });
 
-const stashList = async () => {
-  // TODO: Replace dir
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
-
+const stashList = async ({ dir }: { dir: string }) => {
   const execPromise = util.promisify(exec);
   const { stdout: entries, stderr } = await execPromise('git stash list', {
     cwd: dir,
@@ -41,9 +44,15 @@ const stashList = async () => {
     .filter((x) => x.length > 0);
 };
 
-export const extractGitTree = async (): Promise<TreeData> => {
+export const extractGitTree = async (): Promise<TreeData | null> => {
   // TODO: Replace dir
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
+  const dir = await getCwd();
+
+  if (!dir) {
+    // No directory has been selected yet
+    return null;
+  }
+
   // TODO: Customize main branch name
   const mainBranch = 'main';
 
@@ -198,7 +207,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
   //     { showHidden: false, depth: null, colors: true },
   //   ),
   // );
-  const stashEntries = (await stashList()).length;
+  const stashEntries = (await stashList({ dir })).length;
   return {
     rootCommit,
     commitMap,
@@ -207,6 +216,7 @@ export const extractGitTree = async (): Promise<TreeData> => {
     currentBranch: currentBranch ?? null,
     mainBranch,
     rebaseStatus: rebaseStatus(),
+    cwd: dir,
   };
 };
 
@@ -222,6 +232,7 @@ export const reloadGitTree = async ({
     // This happens in rare instances (usually race condition with filesystem)
     // Just ignore it and let the tree reload automatically
     console.error('Error reloading tree', e);
+    mainWindow?.webContents.send('git-tree-updated', null);
   }
 };
 

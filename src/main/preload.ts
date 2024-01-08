@@ -32,6 +32,12 @@ const electronHandler = {
       ipcRenderer.removeListener(channel, subscription);
     };
   },
+  getFolder: (): Promise<string | undefined> => {
+    return ipcRenderer.invoke('get-folder');
+  },
+  setCwd: (cwd: string) => {
+    return ipcRenderer.invoke('set-cwd', cwd);
+  },
   // once(channel: Channels, func: (...args: unknown[]) => void) {
   //   ipcRenderer.once(channel, (_event, ...args) => func(...args));
   // },

@@ -210,7 +210,7 @@ const TreeEntryChunkMainRow = ({
     );
   }
   if (entryType === 'rebase') {
-    return <Rebase treeRebase={entry.entry} />;
+    return <Rebase treeRebase={entry.entry} treeData={treeData} />;
   }
   if (entryType === 'modified') {
     return <Modified entry={entry.entry} treeData={treeData} />;

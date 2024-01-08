@@ -8,20 +8,19 @@ import { EntryWithBox } from './EntryWithBox';
 export const Rebase = ({
   // commit,
   treeRebase, // rebase,
-  // treeData,
+  treeData,
 } // loc, // isRebase,
 // setRebase,
 : {
   // commit: TreeCommit;
   treeRebase: TreeRebase;
-  // treeData: TreeData;
+  treeData: TreeData;
   // loc: Point;
   // isRebase: boolean;
   // rebase: string | undefined;
   // setRebase: (oid: string | undefined) => void;
 }) => {
-  // TODO: Replace dir
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo';
+  const dir = treeData.cwd;
   return (
     <EntryWithBox circleColor="yellow">
       <div

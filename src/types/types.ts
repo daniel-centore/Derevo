@@ -46,6 +46,7 @@ export type TreeData = {
   currentBranch: string | null;
   mainBranch: string;
   rebaseStatus: RebaseStatus;
+  cwd: string;
 };
 
 export type Point = {

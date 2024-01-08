@@ -17,6 +17,7 @@ import {
 } from './activity-status';
 import { TEMP_BRANCH_PREFIX } from '../../types/consts';
 import { spawnTerminal } from './terminal';
+import { getCwd } from '../app-settings';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
 
@@ -52,7 +53,10 @@ export const abortRebase = async ({
 }: {
   mainWindow: BrowserWindow;
 }) => {
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+  const dir = await getCwd();
+  if (!dir) {
+    return;
+  }
 
   setRebaseStatus('cancel-requested');
 
@@ -113,7 +117,10 @@ const performRebaseHelper = async ({
     return;
   }
 
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+  const dir = await getCwd();
+  if (!dir) {
+    return;
+  }
   // TODO: Handle situation when a commit in the graph has no branch
   // TODO: Handle situation when a commit has multiple branches
   const tempBranchName = `${TEMP_BRANCH_PREFIX}${nanoid()}`;
@@ -189,10 +196,14 @@ export const performRebase = async ({
   from: TreeCommit;
   to: string;
 }) => {
+  const dir = await getCwd();
+  if (!dir) {
+    return;
+  }
+
   setRebaseStatus('in-progress');
   setRebaseInitialFrom(from.metadata.oid);
 
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
   const branchRenames: BranchRename[] = [];
   await performRebaseHelper({ from, to, branchRenames, mainWindow });
 

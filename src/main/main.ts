@@ -9,23 +9,26 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import electron, { app, BrowserWindow, shell, ipcMain } from 'electron';
+import electron, { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 // import { shellPath } from 'shell-path';
 // import trash from 'trash';
 import { unlink } from 'node:fs';
 import util from 'util';
+import { head } from 'lodash';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import {
-  autoReloadGitTree,
-  extractGitTree,
-  reloadGitTree,
-} from './gitlib/git-tree';
+import { autoReloadGitTree, reloadGitTree } from './gitlib/git-tree';
 import { abortRebase, performRebase } from './gitlib/git-write';
 import { Command, TreeCommit } from '../types/types';
-import { escapeShellArg, fakeCommand, spawnTerminal, terminalIn, terminalOut } from './gitlib/terminal';
+import {
+  escapeShellArg,
+  fakeCommand,
+  spawnTerminal,
+  terminalIn,
+} from './gitlib/terminal';
+import { getCwd, setCwd } from './app-settings';
 
 class AppUpdater {
   constructor() {
@@ -36,6 +39,27 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+ipcMain.handle('get-folder', async () => {
+  if (!mainWindow) {
+    return undefined;
+  }
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+  });
+  if (canceled) {
+    return undefined;
+  }
+  return head(filePaths);
+});
+
+ipcMain.handle('set-cwd', async (_, data) => {
+  if (!mainWindow) {
+    return;
+  }
+  await setCwd(data);
+  await reloadGitTree({ mainWindow });
+});
 
 ipcMain.handle('extract-git-tree', async () => {
   if (!mainWindow) {
@@ -62,9 +86,9 @@ ipcMain.handle('open-external', async (_event, data) => {
 });
 
 ipcMain.handle('run-cmds', async (_event, data) => {
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+  const dir = await getCwd();
 
-  if (!mainWindow) {
+  if (!mainWindow || !dir) {
     return;
   }
 
@@ -79,7 +103,7 @@ ipcMain.handle('run-cmds', async (_event, data) => {
 });
 
 ipcMain.handle('delete', async (_, files: string[]) => {
-  const dir = '/Users/dcentore/Dropbox/Projects/testing-repo'; // TODO
+  const dir = await getCwd();
 
   if (!mainWindow || files.length === 0) {
     return;

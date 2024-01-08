@@ -16,14 +16,14 @@ import { TerminalComponent } from '../components/TerminalComponent';
 import { TreeData } from '../types/types';
 
 const Main = () => {
-  const [treeData, setTreeData] = useState<TreeData>();
+  const [treeData, setTreeData] = useState<TreeData | null>();
 
   useEffect(() => {
     // console.log('Subscribed in renderer');
     const unsubscribe = window.electron.on('git-tree-updated', (result) => {
       // TODO: Improve types?
       // console.log('RECEIVED MESSAGE', { result });
-      setTreeData(result as TreeData);
+      setTreeData(result as TreeData | null);
       // setTreeData({test123: 45});
     });
     return () => unsubscribe();
@@ -38,6 +38,24 @@ const Main = () => {
   // console.log({ mode });
   if (mode === 'light') {
     setMode('dark');
+  }
+
+  const openRepoButton = (
+    <Button
+      onClick={async () => {
+        const cwd = await window.electron.getFolder();
+        if (!cwd) {
+          return;
+        }
+        await window.electron.setCwd(cwd);
+      }}
+    >
+      Open Repo
+    </Button>
+  );
+
+  if (!treeData?.cwd) {
+    return openRepoButton;
   }
 
   return (
@@ -58,7 +76,7 @@ const Main = () => {
         <ButtonGroup>
           <Button
             onClick={() => {
-              window.electron.runCommands([{ cmd: 'git', args: ['fetch'] },]);
+              window.electron.runCommands([{ cmd: 'git', args: ['fetch'] }]);
             }}
           >
             Fetch
@@ -81,7 +99,7 @@ const Main = () => {
             onClick={() => {
               // TODO: Main branch name
               // TODO: origin name
-              window.electron.runCommands([{ cmd: 'git', args: ['pull'] },]);
+              window.electron.runCommands([{ cmd: 'git', args: ['pull'] }]);
             }}
           >
             Pull current
@@ -111,6 +129,7 @@ const Main = () => {
           >
             Vim
           </Button> */}
+          {openRepoButton}
         </ButtonGroup>
       </div>
       <div slot="start" style={{ flexGrow: 1, overflowY: 'scroll' }}>
