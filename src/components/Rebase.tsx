@@ -1,24 +1,14 @@
 import { Button, ButtonGroup } from '@mui/joy';
-import { shell } from 'electron';
-import { Point, TreeCommit, TreeData, TreeRebase } from '../types/types';
-import { EntryWrapper } from './EntryWrapper';
-import { CIRCLE_RADIUS } from './consts';
+import { TreeData, TreeRebase } from '../types/types';
 import { EntryWithBox } from './EntryWithBox';
 
 export const Rebase = ({
-  // commit,
-  treeRebase, // rebase,
+  treeRebase,
   treeData,
-} // loc, // isRebase,
-// setRebase,
+}
 : {
-  // commit: TreeCommit;
   treeRebase: TreeRebase;
   treeData: TreeData;
-  // loc: Point;
-  // isRebase: boolean;
-  // rebase: string | undefined;
-  // setRebase: (oid: string | undefined) => void;
 }) => {
   const dir = treeData.cwd;
   return (
@@ -99,7 +89,6 @@ export const Rebase = ({
           Abort
         </Button>
       </ButtonGroup>
-      {/* TODO: Abort button */}
     </EntryWithBox>
   );
 };

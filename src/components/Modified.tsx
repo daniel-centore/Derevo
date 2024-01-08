@@ -256,7 +256,6 @@ export const Modified = ({
             </Button>
           </ButtonGroup>
         </div>
-        {/* TODO: Abort button */}
       </EntryWithBox>
     </>
   );

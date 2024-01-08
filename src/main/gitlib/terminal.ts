@@ -52,7 +52,7 @@ export const spawnTerminal = async ({
   );
 
   ptyProcess.onData((ptyData) => {
-    console.log({ ptyData });
+    // console.log({ ptyData });
     mainWindow?.webContents.send('terminal-out', ptyData);
   });
 

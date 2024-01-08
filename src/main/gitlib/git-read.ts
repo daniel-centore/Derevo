@@ -1,13 +1,9 @@
 import util from 'util';
-import { exec } from 'child_process';
 import fs from 'fs';
 import git from 'isomorphic-git';
 import { ChangeType } from '../../types/types';
 
-export const getModifiedFiles = async (
-  dir: string,
-  // { variant }: { variant: 'unmerged' | 'modified' },
-) => {
+export const getModifiedFiles = async (dir: string) => {
   const FILE = 0;
   const HEAD = 1;
   const WORKDIR = 2;

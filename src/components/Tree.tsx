@@ -1,41 +1,11 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { useAsync } from 'react-async';
-import { head, set } from 'lodash';
-import { Point, TreeCommit, TreeData, TreeEntry } from '../types/types';
+import { head } from 'lodash';
+import { Point, TreeData, TreeEntry } from '../types/types';
 import { Commit } from './Commit';
 import { Rebase } from './Rebase';
 import { Modified } from './Modified';
 import { LINE_THICKNESS } from './consts';
 
-type TreeChunkData = {
-  components: ReactNode[];
-  lines: ReactNode[];
-  height: number;
-};
-
-const Line = ({
-  locA,
-  locB,
-  stroke,
-}: {
-  locA: Point;
-  locB: Point;
-  stroke: string;
-}) => {
-  return (
-    <line
-      x1={locA.x}
-      y1={locA.y}
-      x2={locB.x}
-      y2={locB.y}
-      stroke={stroke}
-      strokeWidth={2}
-    />
-  );
-};
-
-// const COMMIT_HEIGHT = 40;
-// const BRANCH_EXTRA_Y_OFFSET = 15;
 const BRANCH_X_OFFSET = 30;
 const BRANCH_OFF_HEIGHT = 40;
 
@@ -46,10 +16,6 @@ const BranchOff = ({ stroke }: { stroke: string }) => {
       width={BRANCH_X_OFFSET + LINE_THICKNESS}
       height={BRANCH_OFF_HEIGHT}
       xmlns="http://www.w3.org/2000/svg"
-      // style={{
-      //   marginLeft: -CIRCLE_RADIUS - (LINE_THICKNESS / 2),
-      //   marginTop: 5,
-      // }}
       style={{
         position: 'absolute',
         bottom: -40,
@@ -203,7 +169,7 @@ const TreeEntryChunkMainRow = ({
       <Commit
         commit={entry.entry}
         treeData={treeData}
-        isRebase={isRebasing} // TODO: Fix
+        isRebase={isRebasing}
         rebase={rebase}
         setRebase={setRebase} // TODO: Disable?
       />
@@ -223,14 +189,12 @@ const TreeEntryChunk = ({
   treeData,
   rebase,
   setRebase,
-  // isRebaseTemp,
   isRebasing: isRebasingRaw,
 }: {
   entry: TreeChunkType;
   treeData: TreeData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
-  // isRebaseTemp: boolean;
   isRebasing: boolean;
 }) => {
   // TODO: Share this logic with the other instance
@@ -262,13 +226,8 @@ const TreeEntryChunk = ({
         style={{
           borderLeftWidth: `${LINE_THICKNESS}px`,
           borderColor: isRebasing ? 'red' : 'grey',
-          // borderColor: 'red',
           borderLeftStyle: 'solid',
           marginTop: hideTip ? 15 : 0,
-          // border: `0 solid ${isRebasing ? 'red' : 'grey'}`,
-          // borderLeftWidth: `${LINE_THICKNESS}px`,
-
-          // marginLeft: `${-LINE_THICKNESS / 2}px`,
         }}
       />
       <div style={{ display: 'flex', flexWrap: 'wrap' }}>
@@ -308,21 +267,12 @@ const TreeChunk = ({
   isRebasing: boolean;
 }) => {
   const entryChunks: ReactNode[] = [];
-  // const lines: ReactNode[] = [];
-  // let yOffset = 0;
-  // let lastLoc: Point | null = null;
-
-  // let entry: TreeEntry | null = root;
-  // let isRebaseTemp = isRebase;
   const isRebasing =
     isRebasingRaw || (root.type === 'commit' && rebase === root.metadata.oid);
 
   const entries = toEntries({ root, isRebasing, rebase });
   for (let i = 0; i < entries.length; ++i) {
     const entry = entries[i];
-    // if (entry.entry.type === 'commit' && entry.entry.metadata.oid === rebase) {
-    //   isRebaseTemp = true;
-    // }
     entryChunks.push(
       <TreeEntryChunk
         key={
@@ -335,7 +285,6 @@ const TreeChunk = ({
         rebase={rebase}
         setRebase={setRebase}
         isRebasing={entry.isRebasing}
-        // isRebaseTemp={isRebaseTemp}
       />,
     );
   }
@@ -351,8 +300,6 @@ const TreeChunk = ({
     >
       <div
         style={{
-          // border: `0 solid ${isRebasing ? 'red' : 'grey'}`,
-          // borderLeftWidth: `${LINE_THICKNESS}px`,
           // TODO: Move the margin above?
           marginLeft: `${BRANCH_X_OFFSET}px`,
         }}
@@ -369,9 +316,6 @@ const TreeChunk = ({
     </div>
   );
 };
-
-// const HEIGHT_OFFSET = COMMIT_HEIGHT / 2;
-// const WIDTH = 900; // TODO: Can we do better?
 
 export const Tree = ({ treeData }: { treeData: TreeData }) => {
   const [rebase, setRebase] = useState<string>();
@@ -390,46 +334,9 @@ export const Tree = ({ treeData }: { treeData: TreeData }) => {
     // Cancel rebase if there are modifications
     setRebase(undefined);
   }
-  // const chunk = createTreeChunk({
-  //   root: treeData.rootCommit,
-  //   treeData,
-  //   chunkLoc: { x: 20, y: 0 },
-  //   rebase,
-  //   setRebase,
-  //   isRebase: false,
-  // });
 
-  // const chunks: ReactNode[] = [];
-
-  // createTreeChunkNew({
-  //   root: treeData.rootCommit,
-  //   treeData,
-  //   rebase,
-  //   setRebase,
-  //   isRebase: false,
-  //   chunks,
-  // });
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-      {/* <svg
-        xmlns="https://www.w3.org/2000/svg"
-        viewBox={`0 -${chunk.height - HEIGHT_OFFSET} ${WIDTH} ${
-          chunk.height + HEIGHT_OFFSET
-        }`}
-        height={chunk.height + HEIGHT_OFFSET}
-        width={WIDTH}
-      >
-        {chunk.lines}
-        {chunk.components}
-      </svg> */}
-      {/* <div style={{ border: '0 solid white', borderLeftWidth: '2px', marginLeft: '-40px' }} /> */}
-      {/* <div
-        style={{
-          border: '0 solid white',
-          borderLeftWidth: '2px',
-          marginLeft: '15px',
-        }}
-      /> */}
       <TreeChunk
         root={treeData.rootCommit}
         treeData={treeData}

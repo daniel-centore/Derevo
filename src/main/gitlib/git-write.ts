@@ -1,12 +1,9 @@
-import util from 'util';
-import { exec } from 'child_process';
 import fs from 'fs';
-import { BrowserWindow, ipcMain } from 'electron';
-import os from 'os';
+import { BrowserWindow } from 'electron';
 import { customAlphabet } from 'nanoid';
 import git from 'isomorphic-git';
-import { RebaseStatus, TreeCommit } from '../../types/types';
-import { extractGitTree, reloadGitTree } from './git-tree';
+import { TreeCommit } from '../../types/types';
+import { reloadGitTree } from './git-tree';
 import { sleep } from '../util';
 import { rebaseInProgress } from './git-read';
 import {
@@ -20,28 +17,6 @@ import { spawnTerminal } from './terminal';
 import { getCwd } from '../app-settings';
 
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
-
-export const commit = () => {
-  // git checkout -b testing-branch
-  // git add .
-  // git commit -m "Created a commit"
-  // checkout a new branch
-  // git add (selected changes)
-  // git commit
-};
-
-export const uncommit = () => {
-  // checkout parent commit hash
-  // delete unused branch (local & remote)
-  // soft reset HEAD~1
-  // checkout current branch
-};
-
-export const amend = () => {
-  // git add (selected changes)
-  // git amend
-  // git rebase all the children commit to the newly amended commit
-};
 
 type BranchRename = {
   tempBranchName: string;

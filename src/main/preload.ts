@@ -1,8 +1,6 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import { Command, TreeCommit } from '../types/types';
 
-// export type Channels = 'ipc-example' | 'extractGitTree';
-
 const electronHandler = {
   invoke: (channel: string, ...args: unknown[]) => {
     return ipcRenderer.invoke(channel, args);
@@ -19,16 +17,12 @@ const electronHandler = {
   delete: (files: string[]) => {
     return ipcRenderer.invoke('delete', files);
   },
-  // sendMessage(channel: Channels, ...args: unknown[]) {
-  //   ipcRenderer.send(channel, ...args);
-  // },
   on(channel: string, func: (...args: unknown[]) => void) {
     const subscription = (_event: IpcRendererEvent, ...args: unknown[]) =>
       func(...args);
     ipcRenderer.on(channel, subscription);
 
     return () => {
-      // console.log('Remove listener');
       ipcRenderer.removeListener(channel, subscription);
     };
   },
@@ -38,9 +32,6 @@ const electronHandler = {
   setCwd: (cwd: string) => {
     return ipcRenderer.invoke('set-cwd', cwd);
   },
-  // once(channel: Channels, func: (...args: unknown[]) => void) {
-  //   ipcRenderer.once(channel, (_event, ...args) => func(...args));
-  // },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

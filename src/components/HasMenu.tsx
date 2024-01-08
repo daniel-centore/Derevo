@@ -1,4 +1,4 @@
-import { ClickAwayListener, Menu } from '@mui/base';
+import { ClickAwayListener } from '@mui/base';
 import { MenuItem, MenuList } from '@mui/joy';
 import { ReactNode, useState } from 'react';
 
