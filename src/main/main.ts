@@ -29,10 +29,7 @@ import {
   terminalIn,
 } from './gitlib/terminal';
 import { getCwd, getGithubToken, setCwd, setGithubToken } from './app-settings';
-import {
-  autoReloadGithub,
-  reloadGithub,
-} from './gitlib/github';
+import { autoReloadGithub, reloadGithub } from './gitlib/github';
 
 class AppUpdater {
   constructor() {
@@ -157,9 +154,13 @@ ipcMain.handle('rebase', async (_, data) => {
     return;
   }
 
-  const { from, to }: { from: TreeCommit; to: string } = data;
+  const {
+    from,
+    to,
+    skipFirstRebase,
+  }: { from: TreeCommit; to: string; skipFirstRebase: boolean } = data;
 
-  await performRebase({ from, to, mainWindow });
+  await performRebase({ from, to, mainWindow, skipFirstRebase });
 });
 
 ipcMain.handle('abort-rebase', async () => {

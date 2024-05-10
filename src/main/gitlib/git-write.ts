@@ -82,12 +82,15 @@ const performRebaseHelper = async ({
   to,
   branchRenames,
   mainWindow,
+  skipRebase,
 }: {
   from: TreeCommit;
   to: string;
   branchRenames: BranchRename[];
   mainWindow: BrowserWindow;
+  skipRebase: boolean;
 }) => {
+  // console.log('Trying', { from, to, skipRebase });
   if (!rebaseStatusInProgress()) {
     return;
   }
@@ -114,6 +117,8 @@ const performRebaseHelper = async ({
   });
 
   const fromBranch = tempBranchName;
+
+  if (!skipRebase) {
   const returnValue = await spawnTerminal({
     command: {
       cmd: 'git',
@@ -138,6 +143,7 @@ const performRebaseHelper = async ({
       }
     }
   }
+  }
 
   if (!rebaseStatusInProgress()) {
     return;
@@ -158,18 +164,25 @@ const performRebaseHelper = async ({
       to: fromBranch,
       branchRenames,
       mainWindow,
+      skipRebase: false,
     });
   }
+};
+
+const getCurrentOid = async ({ dir }: { dir: string }) => {
+  return git.resolveRef({ fs, dir, ref: 'HEAD' });
 };
 
 export const performRebase = async ({
   mainWindow,
   from,
-  to,
+  to: toRaw,
+  skipFirstRebase,
 }: {
   mainWindow: BrowserWindow;
   from: TreeCommit;
   to: string;
+  skipFirstRebase: boolean;
 }) => {
   const dir = await getCwd();
   if (!dir) {
@@ -179,10 +192,19 @@ export const performRebase = async ({
   const tree = getLatestTree();
 
   setRebaseStatus('in-progress');
+  const to = toRaw !== 'HEAD' ? toRaw : await getCurrentOid({ dir });
   setRebaseInitialFrom(from.metadata.oid);
 
+  // console.log('Rebasing', { from, to });
+
   const branchRenames: BranchRename[] = [];
-  await performRebaseHelper({ from, to, branchRenames, mainWindow });
+  await performRebaseHelper({
+    from,
+    to,
+    branchRenames,
+    mainWindow,
+    skipRebase: skipFirstRebase,
+  });
 
   // console.log('performRebase', {status: rebaseStatus()});
   if (!rebaseStatusInProgress()) {

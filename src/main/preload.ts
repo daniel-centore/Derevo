@@ -8,7 +8,11 @@ const electronHandler = {
   runCommands: (cmds: Command[]) => {
     return ipcRenderer.invoke('run-cmds', cmds);
   },
-  rebase: (args: { from: TreeCommit; to: string }) => {
+  rebase: (args: {
+    from: TreeCommit;
+    to: string;
+    skipFirstRebase: boolean;
+  }) => {
     return ipcRenderer.invoke('rebase', args);
   },
   openExternal: (url: string) => {

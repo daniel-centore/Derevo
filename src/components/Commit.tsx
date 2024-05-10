@@ -111,6 +111,7 @@ const getUnmergedButtons = ({
           await window.electron.rebase({
             from: fromRoot,
             to: toRoot.metadata.oid,
+            skipFirstRebase: false,
           });
         }}
       >

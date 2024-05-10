@@ -49,6 +49,9 @@ export const Modified = ({
   const checkedFiles = Object.keys(checkedFileMap).filter(
     (file) => checkedFileMap[file],
   );
+  const uncheckedFiles = Object.keys(checkedFileMap).filter(
+    (file) => !checkedFileMap[file],
+  );
 
   return (
     <>
@@ -221,6 +224,28 @@ export const Modified = ({
                     cmd: 'git',
                     args: ['branch', '--force', br.branchName, 'head'],
                   })),
+                  // Stash unchecked files
+                  ...(uncheckedFiles.length > 0
+                    ? [
+                        { cmd: 'git', args: ['add', ...uncheckedFiles] },
+                        {
+                          cmd: 'git',
+                          args: ['stash', 'push', ...uncheckedFiles],
+                        },
+                      ]
+                    : []),
+                ]);
+
+                // TODO: Test if aborting during rebase still does the unstash
+                // TODO: Test with multiple immediate descendents
+                await window.electron.rebase({
+                  from: entry.rootCommit,
+                  to: 'HEAD',
+                  skipFirstRebase: true,
+                });
+
+                // Check out originally branch
+                await window.electron.runCommands([
                   ...(treeData.currentBranchName
                     ? [
                         {
@@ -229,17 +254,11 @@ export const Modified = ({
                         },
                       ]
                     : []),
+                  // Pop stashed files
+                  ...(uncheckedFiles.length > 0
+                    ? [{ cmd: 'git', args: ['stash', 'pop'] }]
+                    : []),
                 ]);
-                // TODO: git commit --no-verify any remaining modified files. Give it a branch name (e.g. derevo-temp)
-                // TODO: Rebase the rest of the existing stack on top of the modified commit
-                // TODO: Uncommit derevo-temp
-
-                // TODO: If aborted during the rebase, make sure to still do the uncommit afterwards!
-
-                // await window.electron.rebase({
-                //   from: fromRoot,
-                //   to: toRoot.metadata.oid,
-                // });
               }}
             >
               Amend

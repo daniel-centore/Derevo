@@ -213,6 +213,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
               change: ChangeType;
             }[],
             branches: commit.metadata.branches,
+            rootCommit: commit,
           });
         }
       }

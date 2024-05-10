@@ -39,6 +39,7 @@ export type TreeModified = {
     change: ChangeType;
   }[];
   branches: Branch[];
+  rootCommit: TreeCommit;
 };
 
 export type TreeEntry = TreeCommit | TreeRebase | TreeModified;
