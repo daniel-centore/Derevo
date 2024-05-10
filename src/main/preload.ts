@@ -32,6 +32,12 @@ const electronHandler = {
   setCwd: (cwd: string) => {
     return ipcRenderer.invoke('set-cwd', cwd);
   },
+  setGithubToken: (token: string) => {
+    return ipcRenderer.invoke('set-github-token', token);
+  },
+  getGithubToken: () => {
+    return ipcRenderer.invoke('get-github-token');
+  },
   reloadGithub: (commits: string[]) => {
     return ipcRenderer.invoke('reload-github', commits);
   },

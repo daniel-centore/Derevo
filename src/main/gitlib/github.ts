@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import { Octokit, App, RequestError } from 'octokit';
 import { GithubData, TreeCommit, TreeData } from '../../types/types';
 import { getLatestTree } from './git-tree';
+import { getGithubToken } from '../app-settings';
 
 type PrData = Awaited<
   ReturnType<Octokit['rest']['repos']['listPullRequestsAssociatedWithCommit']>
@@ -16,8 +17,7 @@ const prCache: Record<string, PrsData> = {};
 // TODO: Auth
 // TODO: Throttling https://github.com/octokit/plugin-throttling.js?tab=readme-ov-file
 // https://github.com/settings/tokens/new?scopes=repo
-const TOKEN = 'TODO';
-const octokit = new Octokit({ auth: TOKEN });
+
 
 let reloadInProgress = false;
 
@@ -26,6 +26,11 @@ const getPrsForBranch = async (
   repo: string,
   branch: string,
 ): Promise<PrsData | null> => {
+  const token = await getGithubToken();
+  if (!token) {
+    return null;
+  }
+  const octokit = new Octokit({ auth: token });
   const oldValue = branch in prCache ? prCache[branch] : null;
 
   // git for-each-ref --format='%(upstream:short)' refs/heads/dfc/new-commit

@@ -28,7 +28,7 @@ import {
   spawnTerminal,
   terminalIn,
 } from './gitlib/terminal';
-import { getCwd, setCwd } from './app-settings';
+import { getCwd, getGithubToken, setCwd, setGithubToken } from './app-settings';
 import {
   autoReloadGithub,
   reloadGithub,
@@ -70,6 +70,20 @@ ipcMain.handle('set-cwd', async (_, data) => {
   }
   await setCwd(data);
   await reloadGitTree({ mainWindow });
+});
+
+ipcMain.handle('get-github-token', async () => {
+  if (!mainWindow) {
+    return '';
+  }
+  return getGithubToken();
+});
+
+ipcMain.handle('set-github-token', async (_, data) => {
+  if (!mainWindow) {
+    return;
+  }
+  await setGithubToken(data);
 });
 
 ipcMain.handle('reload-github', async (_, data) => {

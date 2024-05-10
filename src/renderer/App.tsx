@@ -15,10 +15,13 @@ import './App.css';
 import { TerminalComponent } from '../components/TerminalComponent';
 import { GithubData, TreeData } from '../types/types';
 import { MAIN_BRANCH_NAME, ORIGIN_NAME } from '../types/consts';
+import { GithubModal } from '../components/GithubModal';
 
 const Main = () => {
   const [treeData, setTreeData] = useState<TreeData | null>();
+  const [githubToken, setGithubToken] = useState('');
   const [githubData, setGithubData] = useState<GithubData>({});
+  const [githubModalOpen, setGithubModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = window.electron.on('git-tree-updated', (result) => {
@@ -29,7 +32,6 @@ const Main = () => {
 
   useEffect(() => {
     const unsubscribe = window.electron.on('github-updated', (result) => {
-      console.log('Updating gh data', {result})
       setGithubData(result as GithubData);
     });
     return () => unsubscribe();
@@ -85,6 +87,8 @@ const Main = () => {
         flexDirection: 'column',
       }}
     >
+      {/* TODO: Default value */}
+      <GithubModal open={githubModalOpen} setOpen={setGithubModalOpen} defaultValue={githubToken} />
       <div
         style={{ marginTop: '18px', marginBottom: '10px', marginLeft: '10px' }}
       >
@@ -142,11 +146,12 @@ const Main = () => {
             Vim
           </Button> */}
           <Button
-            onClick={() => {
-              window.electron.reloadGithub(['eb442f556ce3e92032d678913274c8b6d8268a6f']);
+            onClick={async () => {
+              setGithubToken(await window.electron.getGithubToken());
+              setGithubModalOpen(true);
             }}
           >
-            Reload Github
+            Github Token
           </Button>
           {openRepoButton}
         </ButtonGroup>
