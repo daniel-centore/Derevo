@@ -220,7 +220,7 @@ export const Commit = (props: Props) => {
   const { commit, treeData, isRebase, rebase, setRebase, githubData } = props;
   const meta = commit.metadata;
   let circleColor = 'grey';
-  if (meta.active && !treeData.dirty) {
+  if (meta.active && !treeData.dirty && !treeData.currentBranchName) {
     circleColor = 'cyan';
   }
   if (isRebase) {

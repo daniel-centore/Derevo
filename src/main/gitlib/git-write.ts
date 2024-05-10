@@ -3,7 +3,7 @@ import { BrowserWindow } from 'electron';
 import { customAlphabet } from 'nanoid';
 import git from 'isomorphic-git';
 import { TreeCommit } from '../../types/types';
-import { reloadGitTree } from './git-tree';
+import { getLatestTree, reloadGitTree } from './git-tree';
 import { sleep } from '../util';
 import { rebaseInProgress } from './git-read';
 import {
@@ -176,6 +176,8 @@ export const performRebase = async ({
     return;
   }
 
+  const tree = getLatestTree();
+
   setRebaseStatus('in-progress');
   setRebaseInitialFrom(from.metadata.oid);
 
@@ -235,6 +237,18 @@ export const performRebase = async ({
         mainWindow,
       });
     }
+  }
+
+  const finalCheckout = tree?.currentBranchName ?? from.metadata.branches[0]?.branchName;
+  if (finalCheckout) {
+    await spawnTerminal({
+      command: {
+        cmd: 'git',
+        args: ['checkout', finalCheckout],
+      },
+      dir,
+      mainWindow,
+    });
   }
 
   setRebaseStatus('stopped');
