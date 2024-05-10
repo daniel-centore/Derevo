@@ -1,5 +1,6 @@
 import fs from 'fs';
 import git, { ReadCommitResult } from 'isomorphic-git';
+import http from 'isomorphic-git/http/node';
 import util from 'util';
 import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
@@ -13,7 +14,6 @@ import {
 import { getModifiedFiles, rebaseInProgress } from './git-read';
 import { rebaseStatus } from './activity-status';
 import { getCwd } from '../app-settings';
-import { MAIN_BRANCH_NAME } from '../../types/consts';
 
 let latestTree: TreeData | null;
 
@@ -101,6 +101,32 @@ const extractGitTree = async (): Promise<TreeData | null> => {
   }
   const remote = remotes.length > 0 ? remotes[0] : null;
 
+  const branches = await git.listBranches({ fs, dir });
+
+  let mainBranchName: string | undefined;
+  if (branches.includes('master')) {
+    mainBranchName = 'master';
+  } else if (branches.includes('main')) {
+    mainBranchName = 'main';
+  }
+
+  // TODO: Figure out how to make this work with private GH repos
+  // if (remote) {
+  //   const remoteInfo = await git.getRemoteInfo({
+  //     http,
+  //     url: remote.url,
+  //   });
+  //   if (remoteInfo.HEAD) {
+  //     mainBranch = remoteInfo.HEAD;
+  //   }
+  // }
+
+  if (!mainBranchName) {
+    // TODO: Expose error message better
+    console.log('No main branch identified');
+    return null;
+  }
+
   const currentBranch = await git.currentBranch({
     fs,
     dir,
@@ -117,17 +143,17 @@ const extractGitTree = async (): Promise<TreeData | null> => {
   let dirty = false;
 
   let rootCommit: TreeCommit | null = null;
-  const branches = await git.listBranches({ fs, dir });
+
   // const branches = ['spr-8c8998', 'spr-cb27e1', 'spr-c543ff'];
   const refs: ({ branch: string } | { oid: string })[] = [
-    { branch: MAIN_BRANCH_NAME },
+    { branch: mainBranchName },
     { oid: activeCommit },
     ...branches
-      .filter((x) => x !== MAIN_BRANCH_NAME)
+      .filter((x) => x !== mainBranchName)
       .map((branch) => ({ branch })),
   ];
   for (const ref of refs) {
-    const isMainBranch = 'branch' in ref && ref.branch === MAIN_BRANCH_NAME;
+    const isMainBranch = 'branch' in ref && ref.branch === mainBranchName;
 
     // eslint-disable-next-line no-await-in-loop
     const branchCommits = await git.log({
@@ -233,7 +259,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
     dirty,
     stashEntries,
     currentBranchName: currentBranch ?? null,
-    mainBranchName: MAIN_BRANCH_NAME,
+    mainBranchName,
     rebaseStatus: rebaseStatus(),
     cwd: dir,
     remote,

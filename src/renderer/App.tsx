@@ -14,7 +14,6 @@ import { Tree } from '../components/Tree';
 import './App.css';
 import { TerminalComponent } from '../components/TerminalComponent';
 import { GithubData, TreeData } from '../types/types';
-import { MAIN_BRANCH_NAME, ORIGIN_NAME } from '../types/consts';
 import { GithubModal } from '../components/GithubModal';
 
 const Main = () => {
@@ -36,7 +35,6 @@ const Main = () => {
     });
     return () => unsubscribe();
   }, [setGithubData]);
-
 
   // useEffect(() => {
   //   // Load on start
@@ -88,12 +86,38 @@ const Main = () => {
       }}
     >
       {/* TODO: Default value */}
-      <GithubModal open={githubModalOpen} setOpen={setGithubModalOpen} defaultValue={githubToken} />
+      <GithubModal
+        open={githubModalOpen}
+        setOpen={setGithubModalOpen}
+        defaultValue={githubToken}
+      />
       <div
         style={{ marginTop: '18px', marginBottom: '10px', marginLeft: '10px' }}
       >
         {/* TODO: Populate buttons using an array so they always have rounded edges */}
         <ButtonGroup>
+          <Button
+            disabled={treeData?.dirty}
+            onClick={() => {
+              if (!treeData.remote) {
+                console.log('No remote');
+                return;
+              }
+              window.electron.runCommands([
+                { cmd: 'git', args: ['checkout', treeData.mainBranchName] },
+                {
+                  cmd: 'git',
+                  args: [
+                    'pull',
+                    treeData.remote.remote,
+                    treeData.mainBranchName,
+                  ],
+                },
+              ]);
+            }}
+          >
+            Pull main
+          </Button>
           <Button
             onClick={() => {
               window.electron.runCommands([{ cmd: 'git', args: ['fetch'] }]);
@@ -101,25 +125,14 @@ const Main = () => {
           >
             Fetch
           </Button>
-          <Button
-            disabled={treeData?.dirty}
-            onClick={() => {
-              window.electron.runCommands([
-                { cmd: 'git', args: ['checkout', MAIN_BRANCH_NAME] },
-                { cmd: 'git', args: ['pull', ORIGIN_NAME, MAIN_BRANCH_NAME] },
-              ]);
-            }}
-          >
-            Pull main
-          </Button>
-          <Button
+          {/* <Button
             disabled={treeData?.dirty}
             onClick={() => {
               window.electron.runCommands([{ cmd: 'git', args: ['pull'] }]);
             }}
           >
             Pull current
-          </Button>
+          </Button> */}
           {/* <Button
             disabled={!treeData || treeData.stashEntries === 0}
             onClick={() => {
