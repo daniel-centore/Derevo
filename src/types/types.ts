@@ -60,15 +60,16 @@ export type TreeData = {
 
 export type PrStatus = 'closed' | 'open' | 'merged';
 
+export type GithubPR = {
+  branchName: string;
+  prNumber: number;
+  status: PrStatus;
+  url: string;
+};
 export type GithubData = Record<
   // Branch name
   string,
-  {
-    branchName: string;
-    prNumber: number;
-    status: PrStatus;
-    url: string;
-  }[]
+  GithubPR[]
 >;
 
 export type Point = {

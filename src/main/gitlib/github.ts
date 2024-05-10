@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 import { Octokit, App, RequestError } from 'octokit';
-import { GithubData, TreeCommit, TreeData } from '../../types/types';
+import { GithubData, GithubPR, TreeCommit, TreeData } from '../../types/types';
 import { getLatestTree } from './git-tree';
 import { getGithubToken } from '../app-settings';
 
@@ -17,7 +17,6 @@ const prCache: Record<string, PrsData> = {};
 // TODO: Auth
 // TODO: Throttling https://github.com/octokit/plugin-throttling.js?tab=readme-ov-file
 // https://github.com/settings/tokens/new?scopes=repo
-
 
 let reloadInProgress = false;
 
@@ -97,13 +96,15 @@ export const getPrsForBranches = async (
     // eslint-disable-next-line no-await-in-loop
     const result = await getPrsForBranch(owner, repo, branch);
     if (result) {
-      results[branch] = result.prData.data.map((x) => ({
+      const entry: GithubPR[] = result.prData.data.map((x) => ({
         branchName: branch,
         url: x.html_url,
         status:
           x.state === 'closed' ? (x.merged_at ? 'merged' : 'closed') : 'open',
         prNumber: x.number,
       }));
+      entry.sort((a, b) => a.prNumber - b.prNumber);
+      results[branch] = entry;
     }
   }
   return results;

@@ -44,6 +44,7 @@ const getPrColor = (
 const getUnmergedButtons = ({
   commit,
   treeData,
+  githubData,
   isRebase,
   rebase,
   setRebase,
@@ -177,6 +178,39 @@ const getUnmergedButtons = ({
     );
   }
 
+  const remote = treeData.remote;
+  const activeBranch = commit.metadata.branches.find(
+    (x) => x.branchName === treeData.currentBranchName,
+  );
+  if (
+    treeData.rebaseStatus === 'stopped' &&
+    !treeData.dirty &&
+    meta.active &&
+    !meta.onMainBranch &&
+    !rebase &&
+    remote &&
+    treeData.currentBranchName &&
+    activeBranch?.hasChangesFromRemote !== false
+  ) {
+    buttons.push(
+      <Button
+        key="stash-pop"
+        onClick={() => {
+          window.electron.runCommands([
+            {
+              cmd: 'git',
+              args: ['push', remote.remote, 'HEAD', '--force-with-lease'],
+            },
+          ]);
+        }}
+        color="success"
+        variant="solid"
+      >
+        Push
+      </Button>,
+    );
+  }
+
   return buttons;
 };
 
@@ -222,7 +256,7 @@ export const Commit = (props: Props) => {
     >
       <Grid
         container
-        wrap="nowrap"
+        // wrap="nowrap"
         style={{
           fontSize: '14px',
           lineHeight: '32px', // Should be height of largest element
@@ -347,43 +381,27 @@ export const Commit = (props: Props) => {
             (x) => x.branchName === pr.branchName,
           );
           return (
-            <>
-              <Chip
-                style={{ marginRight: '7px', marginLeft: '7px' }}
-                variant="solid"
-                color={getPrColor(pr.status, prCommitBranch)}
-                onClick={() => {
-                  window.electron.openExternal(pr.url);
-                }}
-              >
-                #{pr.prNumber}
-                {pr.status === 'closed' && ' (Closed)'}
-                {prCommitBranch?.hasChangesFromRemote && ' (Out of Sync)'}
-              </Chip>
-              {prCommitBranch?.hasChangesFromRemote && (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    window.electron.runCommands([
-                      {
-                        cmd: 'git',
-                        args: [
-                          'push',
-                          treeData.remote?.remote ?? 'origin',
-                          pr.branchName,
-                          '--force-with-lease',
-                        ],
-                      },
-                    ]);
-                  }}
-                >
-                  Push
-                </Button>
-              )}
-            </>
+            <Chip
+              style={{ marginRight: '7px', marginLeft: '7px' }}
+              variant="solid"
+              color={getPrColor(pr.status, prCommitBranch)}
+              onClick={() => {
+                window.electron.openExternal(pr.url);
+              }}
+            >
+              #{pr.prNumber}
+              {pr.status === 'closed' && ' (Closed)'}
+              {pr.status === 'merged' && ' (Merged)'}
+              {pr.status === 'open' &&
+                (prCommitBranch?.hasChangesFromRemote
+                  ? ' (Out of Sync)'
+                  : ' (Open)')}
+            </Chip>
           );
         })}
-        <ButtonGroup size="sm">{getUnmergedButtons(props)}</ButtonGroup>
+        <ButtonGroup size="sm" style={{ marginLeft: '10px' }}>
+          {getUnmergedButtons(props)}
+        </ButtonGroup>
       </Grid>
     </EntryWrapper>
   );
