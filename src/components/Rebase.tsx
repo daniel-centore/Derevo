@@ -5,8 +5,7 @@ import { EntryWithBox } from './EntryWithBox';
 export const Rebase = ({
   treeRebase,
   treeData,
-}
-: {
+}: {
   treeRebase: TreeRebase;
   treeData: TreeData;
 }) => {
@@ -69,7 +68,10 @@ export const Rebase = ({
                 // This is a kludge which forces the creation of an empty commit if
                 // the rebase results in no changes
                 // See https://stackoverflow.com/a/45693978/998251
-                { cmd: 'git', args: ['commit', '--allow-empty', '--no-edit'] },
+                {
+                  cmd: 'git',
+                  args: ['commit', '--no-verify', '--allow-empty', '--no-edit'],
+                },
                 {
                   cmd: 'git',
                   args: ['-c', 'core.editor=true', 'rebase', '--continue'],

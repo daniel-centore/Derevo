@@ -29,6 +29,10 @@ import {
   terminalIn,
 } from './gitlib/terminal';
 import { getCwd, setCwd } from './app-settings';
+import {
+  autoReloadGithub,
+  reloadGithub,
+} from './gitlib/github';
 
 class AppUpdater {
   constructor() {
@@ -39,6 +43,13 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+// ipcMain.handle('get-prs', async (_, data) => {
+//   if (!mainWindow) {
+//     return;
+//   }
+
+// });
 
 ipcMain.handle('get-folder', async () => {
   if (!mainWindow) {
@@ -59,6 +70,13 @@ ipcMain.handle('set-cwd', async (_, data) => {
   }
   await setCwd(data);
   await reloadGitTree({ mainWindow });
+});
+
+ipcMain.handle('reload-github', async (_, data) => {
+  if (!mainWindow) {
+    return;
+  }
+  await reloadGithub({ mainWindow });
 });
 
 ipcMain.handle('extract-git-tree', async () => {
@@ -192,6 +210,7 @@ const createWindow = async () => {
   });
 
   autoReloadGitTree({ mainWindow });
+  autoReloadGithub({ mainWindow });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 

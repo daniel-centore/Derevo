@@ -13,26 +13,42 @@ import {
 import { Tree } from '../components/Tree';
 import './App.css';
 import { TerminalComponent } from '../components/TerminalComponent';
-import { TreeData } from '../types/types';
+import { GithubData, TreeData } from '../types/types';
+import { MAIN_BRANCH_NAME, ORIGIN_NAME } from '../types/consts';
 
 const Main = () => {
   const [treeData, setTreeData] = useState<TreeData | null>();
+  const [githubData, setGithubData] = useState<GithubData>({});
 
   useEffect(() => {
-    // console.log('Subscribed in renderer');
     const unsubscribe = window.electron.on('git-tree-updated', (result) => {
-      // TODO: Improve types?
-      // console.log('RECEIVED MESSAGE', { result });
       setTreeData(result as TreeData | null);
-      // setTreeData({test123: 45});
     });
     return () => unsubscribe();
   }, [setTreeData]);
 
   useEffect(() => {
-    // Load on start
-    window.electron.invoke('extract-git-tree');
-  }, []);
+    const unsubscribe = window.electron.on('github-updated', (result) => {
+      console.log('Updating gh data', {result})
+      setGithubData(result as GithubData);
+    });
+    return () => unsubscribe();
+  }, [setGithubData]);
+
+
+  // useEffect(() => {
+  //   // Load on start
+  //   window.electron.invoke('extract-git-tree');
+  // }, []);
+
+  // useEffect(() => {
+  //   const timer = setTimeout(async () => {
+  //     window.electron.invoke('extract-git-tree');
+  //   }, 1000);
+  //   return () => {
+  //     clearTimeout(timer);
+  //   };
+  // }, []);
 
   const { mode, setMode } = useColorScheme();
   // console.log({ mode });
@@ -84,11 +100,9 @@ const Main = () => {
           <Button
             disabled={treeData?.dirty}
             onClick={() => {
-              // TODO: Main branch name
-              // TODO: origin name
               window.electron.runCommands([
-                { cmd: 'git', args: ['checkout', 'main'] },
-                { cmd: 'git', args: ['pull', 'origin', 'main'] },
+                { cmd: 'git', args: ['checkout', MAIN_BRANCH_NAME] },
+                { cmd: 'git', args: ['pull', ORIGIN_NAME, MAIN_BRANCH_NAME] },
               ]);
             }}
           >
@@ -97,8 +111,6 @@ const Main = () => {
           <Button
             disabled={treeData?.dirty}
             onClick={() => {
-              // TODO: Main branch name
-              // TODO: origin name
               window.electron.runCommands([{ cmd: 'git', args: ['pull'] }]);
             }}
           >
@@ -129,11 +141,18 @@ const Main = () => {
           >
             Vim
           </Button> */}
+          <Button
+            onClick={() => {
+              window.electron.reloadGithub(['eb442f556ce3e92032d678913274c8b6d8268a6f']);
+            }}
+          >
+            Reload Github
+          </Button>
           {openRepoButton}
         </ButtonGroup>
       </div>
       <div slot="start" style={{ flexGrow: 1, overflowY: 'scroll' }}>
-        {treeData && <Tree treeData={treeData} />}
+        {treeData && <Tree treeData={treeData} githubData={githubData} />}
       </div>
       <div
         slot="end"
@@ -147,12 +166,6 @@ const Main = () => {
     </div>
   );
 };
-
-// const darkTheme = createTheme({
-//   palette: {
-//     mode: 'dark',
-//   },
-// });
 
 export default function App() {
   return (

@@ -12,6 +12,11 @@ import {
 import { getModifiedFiles, rebaseInProgress } from './git-read';
 import { rebaseStatus } from './activity-status';
 import { getCwd } from '../app-settings';
+import { MAIN_BRANCH_NAME } from '../../types/consts';
+
+let latestTree: TreeData | null;
+
+export const getLatestTree = () => latestTree;
 
 const rawCommitToMeta = ({
   rawCommit,
@@ -44,8 +49,7 @@ const stashList = async ({ dir }: { dir: string }) => {
     .filter((x) => x.length > 0);
 };
 
-export const extractGitTree = async (): Promise<TreeData | null> => {
-  // TODO: Replace dir
+const extractGitTree = async (): Promise<TreeData | null> => {
   const dir = await getCwd();
 
   if (!dir) {
@@ -53,8 +57,12 @@ export const extractGitTree = async (): Promise<TreeData | null> => {
     return null;
   }
 
-  // TODO: Customize main branch name
-  const mainBranch = 'main';
+  const remotes = await git.listRemotes({ fs, dir });
+  if (remotes.length > 1) {
+    // TODO: Expose error message better
+    console.log('Too many remotes');
+    return null;
+  }
 
   const currentBranch = await git.currentBranch({
     fs,
@@ -75,17 +83,15 @@ export const extractGitTree = async (): Promise<TreeData | null> => {
   const branches = await git.listBranches({ fs, dir });
   // const branches = ['spr-8c8998', 'spr-cb27e1', 'spr-c543ff'];
   const refs: ({ branch: string } | { oid: string })[] = [
-    { branch: mainBranch },
+    { branch: MAIN_BRANCH_NAME },
     { oid: activeCommit },
-    ...branches.filter((x) => x !== mainBranch).map((branch) => ({ branch })),
+    ...branches
+      .filter((x) => x !== MAIN_BRANCH_NAME)
+      .map((branch) => ({ branch })),
   ];
   for (const ref of refs) {
-    const isMainBranch = 'branch' in ref && ref.branch === mainBranch;
+    const isMainBranch = 'branch' in ref && ref.branch === MAIN_BRANCH_NAME;
 
-    // if ('branch' in ref && ref.branch === mainBranch) {
-    //   continue;
-    // }
-    // TODO: Refactor to do this outside of loop?
     // eslint-disable-next-line no-await-in-loop
     const branchCommits = await git.log({
       fs,
@@ -96,14 +102,6 @@ export const extractGitTree = async (): Promise<TreeData | null> => {
     let previousCommit = null;
     for (let i = 0; i < branchCommits.length; i++) {
       const rawCommit = branchCommits[i];
-      // console.log(
-      //   'Raw Commit',
-      //   util.inspect(
-      //     { rawCommit },
-      //     { showHidden: false, depth: null, colors: true },
-      //   ),
-      // );
-      // console.log({ rawCommit });
       if (rawCommit.oid in commitMap) {
         // Link to the existing commit in the map and quit this branch
         if (i === 0 && 'branch' in ref) {
@@ -128,27 +126,17 @@ export const extractGitTree = async (): Promise<TreeData | null> => {
       };
 
       if (rawCommit.oid === activeCommit) {
-        // const execPromise = util.promisify(exec);
         // eslint-disable-next-line no-await-in-loop
         const unmergedFiles = await getModifiedFiles(dir);
-        console.log({ unmergedFiles });
-
-        // console.log({ unmergedFiles });
 
         if (unmergedFiles.length > 0) {
           // Dirty
           dirty = true;
         }
 
+        // eslint-disable-next-line no-await-in-loop
         const rebaseFolderExists = await rebaseInProgress(dir);
-        // const conflictedFile = (
-        //   // eslint-disable-next-line no-await-in-loop
-        //   await Promise.all(
-        //     unmergedFiles.map((file) => readFilePromise(file, 'utf-8')),
-        //   )
-        // ).map((text) => text.split('\n'));
 
-        // TODO: Check for active merge
         if (rebaseFolderExists) {
           dirty = true;
         }
@@ -175,7 +163,6 @@ export const extractGitTree = async (): Promise<TreeData | null> => {
             conflictedFiles,
           });
         } else if (unmergedFiles.length > 0) {
-          // const unmergedFilenames = unmergedFiles.map((x) => x.filename);
           commit.branchSplits.push({
             type: 'modified',
             dirtyFiles: unmergedFiles.filter((x) => !!x.status) as {
@@ -186,11 +173,6 @@ export const extractGitTree = async (): Promise<TreeData | null> => {
             branches: commit.metadata.branches,
           });
         }
-
-        // eslint-disable-next-line no-await-in-loop
-        // const files = await git.listFiles({ fs });
-        // console.log({files});
-        //
       }
 
       commitMap[rawCommit.oid] = commit;
@@ -200,23 +182,18 @@ export const extractGitTree = async (): Promise<TreeData | null> => {
       }
     }
   }
-  // console.log(
-  //   'Branch Commits',
-  //   util.inspect(
-  //     { rootCommit },
-  //     { showHidden: false, depth: null, colors: true },
-  //   ),
-  // );
   const stashEntries = (await stashList({ dir })).length;
+
   return {
     rootCommit,
     commitMap,
     dirty,
     stashEntries,
     currentBranch: currentBranch ?? null,
-    mainBranch,
+    mainBranch: MAIN_BRANCH_NAME,
     rebaseStatus: rebaseStatus(),
     cwd: dir,
+    remote: remotes.length > 0 ? remotes[0] : null,
   };
 };
 
@@ -227,6 +204,7 @@ export const reloadGitTree = async ({
 }) => {
   try {
     const result = await extractGitTree();
+    latestTree = result;
     mainWindow?.webContents.send('git-tree-updated', result);
   } catch (e) {
     // This happens in rare instances (usually race condition with filesystem)

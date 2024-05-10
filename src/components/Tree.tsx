@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { head } from 'lodash';
-import { Point, TreeData, TreeEntry } from '../types/types';
+import { GithubData, Point, TreeData, TreeEntry } from '../types/types';
 import { Commit } from './Commit';
 import { Rebase } from './Rebase';
 import { Modified } from './Modified';
@@ -59,7 +59,18 @@ const sortBranches = (branchSplits: TreeEntry[]) => {
     if (b.metadata.onMainBranch) {
       return 1;
     }
-    return a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
+    const authorDiff =
+      a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
+    if (authorDiff !== 0) {
+      return authorDiff;
+    }
+    const commitDiff =
+      a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime();
+    if (commitDiff !== 0) {
+      return commitDiff;
+    }
+    // Tiebreaker
+    return a.metadata.oid.localeCompare(b.metadata.oid);
   });
 };
 
@@ -123,12 +134,14 @@ const toEntries = ({
 const TreeEntryBranches = ({
   entry,
   treeData,
+  githubData,
   rebase,
   setRebase,
   isRebasing,
 }: {
   entry: TreeChunkType;
   treeData: TreeData;
+  githubData: GithubData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
   isRebasing: boolean;
@@ -141,6 +154,7 @@ const TreeEntryBranches = ({
         key={branch.type === 'commit' ? branch.metadata.oid : branch.type}
         root={branch}
         treeData={treeData}
+        githubData={githubData}
         rebase={rebase}
         setRebase={setRebase}
         isRebasing={isRebasing}
@@ -153,12 +167,14 @@ const TreeEntryBranches = ({
 const TreeEntryChunkMainRow = ({
   entry,
   treeData,
+  githubData,
   rebase,
   setRebase,
   isRebasing,
 }: {
   entry: TreeChunkType;
   treeData: TreeData;
+  githubData: GithubData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
   isRebasing: boolean;
@@ -169,9 +185,10 @@ const TreeEntryChunkMainRow = ({
       <Commit
         commit={entry.entry}
         treeData={treeData}
+        githubData={githubData}
         isRebase={isRebasing}
         rebase={rebase}
-        setRebase={setRebase} // TODO: Disable?
+        setRebase={setRebase}
       />
     );
   }
@@ -187,12 +204,14 @@ const TreeEntryChunkMainRow = ({
 const TreeEntryChunk = ({
   entry,
   treeData,
+  githubData,
   rebase,
   setRebase,
   isRebasing: isRebasingRaw,
 }: {
   entry: TreeChunkType;
   treeData: TreeData;
+  githubData: GithubData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
   isRebasing: boolean;
@@ -205,6 +224,7 @@ const TreeEntryChunk = ({
     <TreeEntryChunkMainRow
       entry={entry}
       treeData={treeData}
+      githubData={githubData}
       rebase={rebase}
       setRebase={setRebase}
       isRebasing={isRebasing}
@@ -214,6 +234,7 @@ const TreeEntryChunk = ({
     <TreeEntryBranches
       entry={entry}
       treeData={treeData}
+      githubData={githubData}
       rebase={rebase}
       setRebase={setRebase}
       isRebasing={isRebasing}
@@ -256,12 +277,14 @@ const MARGIN_BRANCH_TOP_LINE = -10;
 const TreeChunk = ({
   root,
   treeData,
+  githubData,
   rebase,
   setRebase,
   isRebasing: isRebasingRaw,
 }: {
   root: TreeEntry;
   treeData: TreeData;
+  githubData: GithubData;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
   isRebasing: boolean;
@@ -282,6 +305,7 @@ const TreeChunk = ({
         }
         entry={entry}
         treeData={treeData}
+        githubData={githubData}
         rebase={rebase}
         setRebase={setRebase}
         isRebasing={entry.isRebasing}
@@ -317,7 +341,13 @@ const TreeChunk = ({
   );
 };
 
-export const Tree = ({ treeData }: { treeData: TreeData }) => {
+export const Tree = ({
+  treeData,
+  githubData,
+}: {
+  treeData: TreeData;
+  githubData: GithubData;
+}) => {
   const [rebase, setRebase] = useState<string>();
 
   useEffect(() => {
@@ -343,6 +373,7 @@ export const Tree = ({ treeData }: { treeData: TreeData }) => {
         rebase={rebase}
         setRebase={setRebase}
         isRebasing={false}
+        githubData={githubData}
       />
     </div>
   );

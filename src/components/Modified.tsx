@@ -203,6 +203,7 @@ export const Modified = ({
                 await window.electron.runCommands([
                   { cmd: 'git', args: ['reset'] },
                   { cmd: 'git', args: ['add', ...checkedFiles] },
+                  // TODO: Rebase the rest of the stack
                   {
                     cmd: 'git',
                     args: [

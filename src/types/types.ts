@@ -47,7 +47,20 @@ export type TreeData = {
   mainBranch: string;
   rebaseStatus: RebaseStatus;
   cwd: string;
+  remote: {
+    remote: string;
+    url: string;
+  } | null;
 };
+
+export type GithubData = Record<
+  string,
+  {
+    prNumber: number;
+    status: 'closed' | 'open';
+    url: string;
+  }[]
+>;
 
 export type Point = {
   x: number;

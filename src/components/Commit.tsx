@@ -1,7 +1,7 @@
 import { Button, ButtonGroup, Chip, MenuItem, MenuList } from '@mui/joy';
 import { ReactNode } from 'react';
 import { customAlphabet } from 'nanoid';
-import { TreeCommit, TreeData } from '../types/types';
+import { GithubData, TreeCommit, TreeData } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { HasMenu } from './HasMenu';
 import { TEMP_BRANCH_PREFIX } from '../types/consts';
@@ -12,6 +12,7 @@ const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
 type Props = {
   commit: TreeCommit;
   treeData: TreeData;
+  githubData: GithubData;
   isRebase: boolean;
   rebase: string | undefined;
   setRebase: (oid: string | undefined) => void;
@@ -37,6 +38,7 @@ const getButtons = ({
   ) {
     buttons.push(
       <Button
+        key="rebase-from"
         // variant="outlined"
         onClick={() => {
           setRebase(meta.oid);
@@ -54,6 +56,7 @@ const getButtons = ({
   ) {
     buttons.push(
       <Button
+        key="cancel-rebase"
         variant="solid"
         color="danger"
         onClick={() => {
@@ -76,6 +79,7 @@ const getButtons = ({
   ) {
     buttons.push(
       <Button
+        key="rebase-to"
         onClick={async () => {
           const fromRoot = treeData.commitMap[rebase];
           const toRoot = treeData.commitMap[meta.oid];
@@ -100,6 +104,7 @@ const getButtons = ({
   ) {
     buttons.push(
       <Button
+        key="uncommit"
         onClick={async () => {
           // TODO: Delete current branch first
           // TODO: Can we pre-populate the "Changes" dialogue which pops up afterward?
@@ -127,6 +132,7 @@ const getButtons = ({
   ) {
     buttons.push(
       <Button
+        key="stash-pop"
         onClick={() => {
           window.electron.runCommands([{ cmd: 'git', args: ['stash', 'pop'] }]);
         }}
@@ -145,7 +151,7 @@ const getButtons = ({
 export const Commit = (props: Props) => {
   // TODO: --no-verify checkbox
   // TODO: Clear inputs after commit successfully completes
-  const { commit, treeData, isRebase, rebase, setRebase } = props;
+  const { commit, treeData, isRebase, rebase, setRebase, githubData } = props;
   const meta = commit.metadata;
   let circleColor = 'grey';
   if (meta.active && !treeData.dirty) {
@@ -161,6 +167,9 @@ export const Commit = (props: Props) => {
     circleColor = 'yellow';
   }
   const disableCheckout = !!(rebase || treeData.dirty);
+  const prs = commit.metadata.branches.flatMap(
+    (branch) => githubData[branch] ?? [],
+  );
   return (
     <EntryWrapper
       circleColor={circleColor}
@@ -284,7 +293,30 @@ export const Commit = (props: Props) => {
             </Chip>
           </HasMenu>
         )}
-        {meta.title}
+        <span
+          style={{
+            textDecoration: prs.some((pr) => pr.status === 'closed')
+              ? 'line-through'
+              : 'inherit',
+          }}
+        >
+          {meta.title}
+        </span>
+        {prs.map((pr) => {
+          return (
+            <Chip
+              style={{ marginRight: '7px', marginLeft: '7px' }}
+              variant="solid"
+              color={pr.status === 'open' ? 'success' : 'neutral'}
+              onClick={() => {
+                window.electron.openExternal(pr.url);
+              }}
+            >
+              #{pr.prNumber}
+              {pr.status === 'closed' && ' (Closed)'}
+            </Chip>
+          );
+        })}
         <ButtonGroup style={{ float: 'right', marginLeft: '15px' }} size="sm">
           {getButtons(props)}
         </ButtonGroup>

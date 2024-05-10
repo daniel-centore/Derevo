@@ -16,8 +16,6 @@ export const escapeShellArg = (arg: string) => {
   return `'${arg.replace(/'/g, `'\\''`)}'`;
 };
 
-// TODO: Hit spawn hard to see if you can repro the "posix_spawnp failed" error
-// TODO: Try seeing if forking works to contain the spawned instance?
 export const spawnTerminal = async ({
   command: { cmd, args },
   dir,
@@ -30,9 +28,6 @@ export const spawnTerminal = async ({
   if (ptyProcess) {
     // TODO Lock instead
     console.log('Error: Process already running!');
-    // ptyProcess.onExit(() => {
-    //   spawn(cmd, cwd);
-    // });
     return -1;
   }
 
@@ -52,7 +47,6 @@ export const spawnTerminal = async ({
   );
 
   ptyProcess.onData((ptyData) => {
-    // console.log({ ptyData });
     mainWindow?.webContents.send('terminal-out', ptyData);
   });
 

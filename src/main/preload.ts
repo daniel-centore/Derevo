@@ -32,6 +32,9 @@ const electronHandler = {
   setCwd: (cwd: string) => {
     return ipcRenderer.invoke('set-cwd', cwd);
   },
+  reloadGithub: (commits: string[]) => {
+    return ipcRenderer.invoke('reload-github', commits);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
