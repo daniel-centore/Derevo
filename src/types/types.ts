@@ -39,6 +39,7 @@ export type TreeModified = {
     change: ChangeType;
   }[];
   branches: Branch[];
+
   rootCommit: TreeCommit;
 };
 
@@ -77,3 +78,5 @@ export type Point = {
   x: number;
   y: number;
 };
+
+export type RebaseResult = { result: 'success' | 'aborted' };

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import { Command, TreeCommit } from '../types/types';
+import { Command, RebaseResult, TreeCommit } from '../types/types';
 
 const electronHandler = {
   invoke: (channel: string, ...args: unknown[]) => {
@@ -12,7 +12,7 @@ const electronHandler = {
     from: TreeCommit;
     to: string;
     skipFirstRebase: boolean;
-  }) => {
+  }): Promise<RebaseResult> => {
     return ipcRenderer.invoke('rebase', args);
   },
   openExternal: (url: string) => {

@@ -2,7 +2,7 @@ import fs from 'fs';
 import { BrowserWindow } from 'electron';
 import { customAlphabet } from 'nanoid';
 import git from 'isomorphic-git';
-import { TreeCommit } from '../../types/types';
+import { RebaseResult, TreeCommit } from '../../types/types';
 import { getLatestTree, reloadGitTree } from './git-tree';
 import { sleep } from '../util';
 import { rebaseInProgress } from './git-read';
@@ -82,13 +82,11 @@ const performRebaseHelper = async ({
   to,
   branchRenames,
   mainWindow,
-  skipRebase,
 }: {
   from: TreeCommit;
   to: string;
   branchRenames: BranchRename[];
   mainWindow: BrowserWindow;
-  skipRebase: boolean;
 }) => {
   // console.log('Trying', { from, to, skipRebase });
   if (!rebaseStatusInProgress()) {
@@ -113,12 +111,11 @@ const performRebaseHelper = async ({
 
   branchRenames.push({
     tempBranchName,
-    goalBranches: from.metadata.branches.map(x => x.branchName),
+    goalBranches: from.metadata.branches.map((x) => x.branchName),
   });
 
   const fromBranch = tempBranchName;
 
-  if (!skipRebase) {
   const returnValue = await spawnTerminal({
     command: {
       cmd: 'git',
@@ -143,7 +140,6 @@ const performRebaseHelper = async ({
       }
     }
   }
-  }
 
   if (!rebaseStatusInProgress()) {
     return;
@@ -164,7 +160,6 @@ const performRebaseHelper = async ({
       to: fromBranch,
       branchRenames,
       mainWindow,
-      skipRebase: false,
     });
   }
 };
@@ -183,10 +178,10 @@ export const performRebase = async ({
   from: TreeCommit;
   to: string;
   skipFirstRebase: boolean;
-}) => {
+}): Promise<RebaseResult> => {
   const dir = await getCwd();
   if (!dir) {
-    return;
+    return { result: 'aborted' };
   }
 
   const tree = getLatestTree();
@@ -198,17 +193,34 @@ export const performRebase = async ({
   // console.log('Rebasing', { from, to });
 
   const branchRenames: BranchRename[] = [];
-  await performRebaseHelper({
-    from,
-    to,
-    branchRenames,
-    mainWindow,
-    skipRebase: skipFirstRebase,
-  });
+  if (skipFirstRebase) {
+    for (const split of from.branchSplits) {
+      if (!rebaseStatusInProgress()) {
+        return { result: 'aborted' };
+      }
+      if (split.type !== 'commit') {
+        continue;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await performRebaseHelper({
+        from: split,
+        to,
+        branchRenames,
+        mainWindow,
+      });
+    }
+  } else {
+    await performRebaseHelper({
+      from,
+      to,
+      branchRenames,
+      mainWindow,
+    });
+  }
 
   // console.log('performRebase', {status: rebaseStatus()});
   if (!rebaseStatusInProgress()) {
-    return;
+    return { result: 'aborted' };
   }
 
   // This ends us at the originally selected commit
@@ -261,7 +273,8 @@ export const performRebase = async ({
     }
   }
 
-  const finalCheckout = tree?.currentBranchName ?? from.metadata.branches[0]?.branchName;
+  const finalCheckout =
+    tree?.currentBranchName ?? from.metadata.branches[0]?.branchName;
   if (finalCheckout) {
     await spawnTerminal({
       command: {
@@ -275,4 +288,6 @@ export const performRebase = async ({
 
   setRebaseStatus('stopped');
   await reloadGitTree({ mainWindow });
+
+  return { result: 'success' };
 };

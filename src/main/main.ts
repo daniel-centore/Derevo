@@ -151,7 +151,7 @@ ipcMain.handle('delete', async (_, files: string[]) => {
 
 ipcMain.handle('rebase', async (_, data) => {
   if (!mainWindow) {
-    return;
+    return null;
   }
 
   const {
@@ -160,7 +160,7 @@ ipcMain.handle('rebase', async (_, data) => {
     skipFirstRebase,
   }: { from: TreeCommit; to: string; skipFirstRebase: boolean } = data;
 
-  await performRebase({ from, to, mainWindow, skipFirstRebase });
+  return performRebase({ from, to, mainWindow, skipFirstRebase });
 });
 
 ipcMain.handle('abort-rebase', async () => {

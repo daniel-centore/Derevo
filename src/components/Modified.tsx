@@ -236,16 +236,19 @@ export const Modified = ({
                     : []),
                 ]);
 
-                // TODO: Test if aborting during rebase still does the unstash
-                // TODO: Test with multiple immediate descendents
-                await window.electron.rebase({
+                const { result: rebaseResult } = await window.electron.rebase({
                   from: entry.rootCommit,
                   to: 'HEAD',
                   skipFirstRebase: true,
                 });
 
-                // Check out originally branch
+                if (rebaseResult === 'aborted') {
+                  // TODO: Eventually it would be great to be able to move the branches back to the original
+                  // commit and take the changes back into a modified state. This may take some work.
+                }
+
                 await window.electron.runCommands([
+                  // Check out originally branch
                   ...(treeData.currentBranchName
                     ? [
                         {
