@@ -26,6 +26,7 @@ module.exports = {
     'react/require-default-props': 'off',
     'no-unneeded-ternary': 'off',
     'no-underscore-dangle': 'off',
+    'no-nested-ternary': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

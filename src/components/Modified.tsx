@@ -219,7 +219,7 @@ export const Modified = ({
                   { cmd: 'git', args: ['checkout', 'head'] },
                   ...entry.branches.map((br) => ({
                     cmd: 'git',
-                    args: ['branch', '--force', br, 'head'],
+                    args: ['branch', '--force', br.branchName, 'head'],
                   })),
                 ]);
                 // TODO: git commit --no-verify any remaining modified files. Give it a branch name (e.g. derevo-temp)

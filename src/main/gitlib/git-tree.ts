@@ -4,6 +4,7 @@ import util from 'util';
 import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
 import {
+  Branch,
   ChangeType,
   CommitMetadata,
   TreeCommit,
@@ -25,7 +26,7 @@ const rawCommitToMeta = ({
   mainBranch,
 }: {
   rawCommit: ReadCommitResult;
-  branch: string | null;
+  branch: Branch | null;
   activeCommit: string;
   mainBranch: boolean;
 }): CommitMetadata => ({
@@ -49,6 +50,41 @@ const stashList = async ({ dir }: { dir: string }) => {
     .filter((x) => x.length > 0);
 };
 
+const getBranch = async ({
+  branchName,
+  remote,
+  dir,
+}: {
+  branchName: string;
+  remote: {
+    remote: string;
+    url: string;
+  } | null;
+  dir: string;
+}): Promise<Branch> => {
+  const execPromise = util.promisify(exec);
+  let hasChangesFromRemote: boolean | null = null;
+  if (remote) {
+    const bashSafeBranch = branchName.replaceAll("'", "\\'");
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const { stdout: changesFromRemote, stderr } = await execPromise(
+        `git log '${remote.remote}/${bashSafeBranch}'..'${bashSafeBranch}'`,
+        {
+          cwd: dir,
+        },
+      );
+      hasChangesFromRemote = !!changesFromRemote.trim();
+    } catch (e) {
+      // This is normal when the branch has no remote
+    }
+  }
+  return {
+    branchName,
+    hasChangesFromRemote,
+  };
+};
+
 const extractGitTree = async (): Promise<TreeData | null> => {
   const dir = await getCwd();
 
@@ -63,6 +99,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
     console.log('Too many remotes');
     return null;
   }
+  const remote = remotes.length > 0 ? remotes[0] : null;
 
   const currentBranch = await git.currentBranch({
     fs,
@@ -105,7 +142,8 @@ const extractGitTree = async (): Promise<TreeData | null> => {
       if (rawCommit.oid in commitMap) {
         // Link to the existing commit in the map and quit this branch
         if (i === 0 && 'branch' in ref) {
-          commitMap[rawCommit.oid].metadata.branches.push(ref.branch);
+          const branch = await getBranch({dir, remote, branchName: ref.branch});
+          commitMap[rawCommit.oid].metadata.branches.push(branch);
         }
         if (previousCommit) {
           commitMap[rawCommit.oid].branchSplits.push(previousCommit);
@@ -113,12 +151,16 @@ const extractGitTree = async (): Promise<TreeData | null> => {
         break;
       }
 
+      const branchName = i === 0 && 'branch' in ref ? ref.branch : null;
+
+      const branch = branchName ? await getBranch({branchName, dir, remote}) : null;
+
       // Add new commit
       const commit: TreeCommit = {
         type: 'commit',
         metadata: rawCommitToMeta({
           rawCommit,
-          branch: i === 0 && 'branch' in ref ? ref.branch : null,
+          branch,
           activeCommit,
           mainBranch: isMainBranch,
         }),
@@ -189,11 +231,11 @@ const extractGitTree = async (): Promise<TreeData | null> => {
     commitMap,
     dirty,
     stashEntries,
-    currentBranch: currentBranch ?? null,
-    mainBranch: MAIN_BRANCH_NAME,
+    currentBranchName: currentBranch ?? null,
+    mainBranchName: MAIN_BRANCH_NAME,
     rebaseStatus: rebaseStatus(),
     cwd: dir,
-    remote: remotes.length > 0 ? remotes[0] : null,
+    remote,
   };
 };
 

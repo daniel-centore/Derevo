@@ -92,9 +92,11 @@ export const getPrsForBranches = async (
     // eslint-disable-next-line no-await-in-loop
     const result = await getPrsForBranch(owner, repo, branch);
     if (result) {
-      results[branch] = result.prData.data.map(x => ({
+      results[branch] = result.prData.data.map((x) => ({
+        branchName: branch,
         url: x.html_url,
-        status: x.state as 'open' | 'closed',
+        status:
+          x.state === 'closed' ? (x.merged_at ? 'merged' : 'closed') : 'open',
         prNumber: x.number,
       }));
     }
@@ -152,7 +154,11 @@ export const reloadGithub = async ({
 
   const branches = getBranchesFromTree(tree);
   try {
-    const result = await getPrsForBranches(owner, repo, branches);
+    const result = await getPrsForBranches(
+      owner,
+      repo,
+      branches.map((x) => x.branchName),
+    );
     mainWindow?.webContents.send('github-updated', result);
   } catch (e) {
     console.error(e);

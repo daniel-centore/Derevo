@@ -2,11 +2,16 @@ export type Command = { cmd: string; args: string[] };
 
 export type RebaseStatus = 'in-progress' | 'cancel-requested' | 'stopped';
 
+export type Branch = {
+  branchName: string;
+  hasChangesFromRemote: null | boolean;
+};
+
 export type CommitMetadata = {
   oid: string;
   title: string;
   active: boolean;
-  branches: string[];
+  branches: Branch[];
   onMainBranch: boolean;
   authorTs: Date;
   commitTs: Date;
@@ -33,7 +38,7 @@ export type TreeModified = {
     filename: string;
     change: ChangeType;
   }[];
-  branches: string[];
+  branches: Branch[];
 };
 
 export type TreeEntry = TreeCommit | TreeRebase | TreeModified;
@@ -43,8 +48,8 @@ export type TreeData = {
   commitMap: Record<string, TreeCommit>;
   dirty: boolean;
   stashEntries: number;
-  currentBranch: string | null;
-  mainBranch: string;
+  currentBranchName: string | null;
+  mainBranchName: string;
   rebaseStatus: RebaseStatus;
   cwd: string;
   remote: {
@@ -53,11 +58,15 @@ export type TreeData = {
   } | null;
 };
 
+export type PrStatus = 'closed' | 'open' | 'merged';
+
 export type GithubData = Record<
+  // Branch name
   string,
   {
+    branchName: string;
     prNumber: number;
-    status: 'closed' | 'open';
+    status: PrStatus;
     url: string;
   }[]
 >;

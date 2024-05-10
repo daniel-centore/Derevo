@@ -110,7 +110,7 @@ const performRebaseHelper = async ({
 
   branchRenames.push({
     tempBranchName,
-    goalBranches: from.metadata.branches,
+    goalBranches: from.metadata.branches.map(x => x.branchName),
   });
 
   const fromBranch = tempBranchName;

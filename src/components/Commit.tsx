@@ -1,7 +1,13 @@
-import { Button, ButtonGroup, Chip, MenuItem, MenuList } from '@mui/joy';
-import { ReactNode } from 'react';
+import { Button, ButtonGroup, Chip, Grid } from '@mui/joy';
+import { ComponentProps, ReactNode } from 'react';
 import { customAlphabet } from 'nanoid';
-import { GithubData, TreeCommit, TreeData } from '../types/types';
+import {
+  Branch,
+  GithubData,
+  PrStatus,
+  TreeCommit,
+  TreeData,
+} from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { HasMenu } from './HasMenu';
 import { TEMP_BRANCH_PREFIX } from '../types/consts';
@@ -18,7 +24,24 @@ type Props = {
   setRebase: (oid: string | undefined) => void;
 };
 
-const getButtons = ({
+const getPrColor = (
+  status: PrStatus,
+  prCommitBranch: Branch | undefined,
+): ComponentProps<typeof Chip>['color'] => {
+  if (status === 'closed' || status === 'merged') {
+    return 'neutral';
+  }
+  if (prCommitBranch?.hasChangesFromRemote) {
+    return 'warning';
+  }
+  if (status === 'open') {
+    return 'success';
+  }
+  // Shouldn't happen
+  return 'danger';
+};
+
+const getUnmergedButtons = ({
   commit,
   treeData,
   isRebase,
@@ -115,7 +138,16 @@ const getButtons = ({
             },
             ...(meta.branches.length === 0
               ? []
-              : [{ cmd: 'git', args: ['branch', '-D', ...meta.branches] }]),
+              : [
+                  {
+                    cmd: 'git',
+                    args: [
+                      'branch',
+                      '-D',
+                      ...meta.branches.map((x) => x.branchName),
+                    ],
+                  },
+                ]),
             { cmd: 'git', args: ['reset', '--soft', 'HEAD~'] },
           ]);
         }}
@@ -162,13 +194,15 @@ export const Commit = (props: Props) => {
   }
   if (
     commit.metadata.branches.length === 1 &&
-    commit.metadata.branches.some((x) => x.startsWith(TEMP_BRANCH_PREFIX))
+    commit.metadata.branches.some((x) =>
+      x.branchName.startsWith(TEMP_BRANCH_PREFIX),
+    )
   ) {
     circleColor = 'yellow';
   }
   const disableCheckout = !!(rebase || treeData.dirty);
   const prs = commit.metadata.branches.flatMap(
-    (branch) => githubData[branch] ?? [],
+    (branch) => githubData[branch.branchName] ?? [],
   );
   return (
     <EntryWrapper
@@ -186,7 +220,9 @@ export const Commit = (props: Props) => {
         ]);
       }}
     >
-      <div
+      <Grid
+        container
+        wrap="nowrap"
         style={{
           fontSize: '14px',
           lineHeight: '32px', // Should be height of largest element
@@ -200,10 +236,10 @@ export const Commit = (props: Props) => {
       >
         {meta.branches.length > 0 &&
           meta.branches.map((branch) => {
-            const checkedOut = treeData.currentBranch === branch;
+            const checkedOut = treeData.currentBranchName === branch.branchName;
             return (
               <HasMenu
-                key={branch}
+                key={branch.branchName}
                 menuItems={[
                   {
                     label: 'Rebase →',
@@ -214,13 +250,17 @@ export const Commit = (props: Props) => {
                   },
                   {
                     label: 'Delete Branch',
-                    disabled: treeData.mainBranch === branch || !!rebase,
+                    disabled:
+                      treeData.mainBranchName === branch.branchName || !!rebase,
                     onClick: () => {
                       window.electron.runCommands([
                         ...(checkedOut
                           ? [{ cmd: 'git', args: ['checkout', 'head'] }]
                           : []),
-                        { cmd: 'git', args: ['branch', '-D', branch] },
+                        {
+                          cmd: 'git',
+                          args: ['branch', '-D', branch.branchName],
+                        },
                       ]);
                     },
                   },
@@ -236,11 +276,11 @@ export const Commit = (props: Props) => {
                       return;
                     }
                     window.electron.runCommands([
-                      { cmd: 'git', args: ['checkout', branch] },
+                      { cmd: 'git', args: ['checkout', branch.branchName] },
                     ]);
                   }}
                 >
-                  {branch}
+                  {branch.branchName}
                 </Chip>
               </HasMenu>
             );
@@ -295,7 +335,7 @@ export const Commit = (props: Props) => {
         )}
         <span
           style={{
-            textDecoration: prs.some((pr) => pr.status === 'closed')
+            textDecoration: prs.some((pr) => pr.status === 'merged')
               ? 'line-through'
               : 'inherit',
           }}
@@ -303,24 +343,48 @@ export const Commit = (props: Props) => {
           {meta.title}
         </span>
         {prs.map((pr) => {
+          const prCommitBranch = commit.metadata.branches.find(
+            (x) => x.branchName === pr.branchName,
+          );
           return (
-            <Chip
-              style={{ marginRight: '7px', marginLeft: '7px' }}
-              variant="solid"
-              color={pr.status === 'open' ? 'success' : 'neutral'}
-              onClick={() => {
-                window.electron.openExternal(pr.url);
-              }}
-            >
-              #{pr.prNumber}
-              {pr.status === 'closed' && ' (Closed)'}
-            </Chip>
+            <>
+              <Chip
+                style={{ marginRight: '7px', marginLeft: '7px' }}
+                variant="solid"
+                color={getPrColor(pr.status, prCommitBranch)}
+                onClick={() => {
+                  window.electron.openExternal(pr.url);
+                }}
+              >
+                #{pr.prNumber}
+                {pr.status === 'closed' && ' (Closed)'}
+                {prCommitBranch?.hasChangesFromRemote && ' (Out of Sync)'}
+              </Chip>
+              {prCommitBranch?.hasChangesFromRemote && (
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    window.electron.runCommands([
+                      {
+                        cmd: 'git',
+                        args: [
+                          'push',
+                          treeData.remote?.remote ?? 'origin',
+                          pr.branchName,
+                          '--force-with-lease',
+                        ],
+                      },
+                    ]);
+                  }}
+                >
+                  Push
+                </Button>
+              )}
+            </>
           );
         })}
-        <ButtonGroup style={{ float: 'right', marginLeft: '15px' }} size="sm">
-          {getButtons(props)}
-        </ButtonGroup>
-      </div>
+        <ButtonGroup size="sm">{getUnmergedButtons(props)}</ButtonGroup>
+      </Grid>
     </EntryWrapper>
   );
 };
