@@ -18,7 +18,7 @@ import { unlink } from 'node:fs';
 import util from 'util';
 import { head } from 'lodash';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
+import { resolveHtmlPath } from './main-util';
 import { autoReloadGitTree, reloadGitTree } from './gitlib/git-tree';
 import { abortRebase, performRebase } from './gitlib/git-write';
 import { Command, TreeCommit } from '../types/types';

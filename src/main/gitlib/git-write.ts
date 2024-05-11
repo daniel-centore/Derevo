@@ -4,7 +4,7 @@ import { customAlphabet } from 'nanoid';
 import git from 'isomorphic-git';
 import { RebaseResult, TreeCommit } from '../../types/types';
 import { getLatestTree, reloadGitTree } from './git-tree';
-import { sleep } from '../util';
+import { sleep } from '../main-util';
 import { rebaseInProgress } from './git-read';
 import {
   rebaseInitialFrom,

@@ -10,7 +10,8 @@ import {
 } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { HasMenu } from './HasMenu';
-import { TEMP_BRANCH_PREFIX } from '../types/consts';
+import { SHORT_PREFIXES, TEMP_BRANCH_PREFIX } from '../types/consts';
+import { fromNow } from '../utils/from-now';
 
 // TODO: Share with the other usages
 const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyz1234567890', 6);
@@ -375,7 +376,10 @@ export const Commit = (props: Props) => {
               : 'inherit',
           }}
         >
-          {meta.title}
+          {meta.title}{' '}
+          <span style={{ color: 'grey' }}>
+            ({fromNow(meta.commitTs, SHORT_PREFIXES)})
+          </span>
         </span>
         {prs.map((pr) => {
           const prCommitBranch = commit.metadata.branches.find(
