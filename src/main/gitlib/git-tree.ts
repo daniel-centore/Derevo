@@ -1,9 +1,16 @@
 import fs from 'fs';
-import git, { ReadCommitResult } from 'isomorphic-git';
+import isoGit, { ReadCommitResult } from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 import util from 'util';
 import { exec } from 'child_process';
 import { BrowserWindow } from 'electron';
+import {
+    DefaultLogFields,
+    ListLogLine,
+    SimpleGit,
+    SimpleGitOptions,
+    simpleGit,
+} from 'simple-git';
 import {
     Branch,
     ChangeType,
@@ -28,18 +35,19 @@ const rawCommitToMeta = ({
     activeCommit,
     mainBranch,
 }: {
-    rawCommit: ReadCommitResult;
+    rawCommit: DefaultLogFields & ListLogLine;
     branches: Branch[];
     activeCommit: string;
     mainBranch: boolean;
 }): CommitMetadata => ({
-    oid: rawCommit.oid,
+    oid: rawCommit.hash,
     branches,
-    title: `${rawCommit.commit.message.split('\n')[0]}`,
-    active: rawCommit.oid === activeCommit,
+    title: `${rawCommit.message.split('\n')[0]}`,
+    active: rawCommit.hash === activeCommit,
     onMainBranch: mainBranch,
-    authorTs: new Date(rawCommit.commit.author.timestamp * 1000),
-    commitTs: new Date(rawCommit.commit.committer.timestamp * 1000),
+    // TODO: Remove one
+    authorTs: new Date(rawCommit.date),
+    commitTs: new Date(rawCommit.date),
 });
 
 const stashList = async ({ dir }: { dir: string }) => {
@@ -88,6 +96,15 @@ const getBranch = async ({
     };
 };
 
+const parseRefs = (rawRefs: string) => {
+    const headPrefix = 'HEAD ->';
+    return rawRefs
+        .split(', ')
+        .map((x) =>
+            x.startsWith(headPrefix) ? x.substring(headPrefix.length) : x,
+        );
+};
+
 const getBranchesForCommit = async ({
     oid,
     dir,
@@ -105,6 +122,29 @@ const getBranchesForCommit = async ({
     return stdout.split('\n').map((x) => x.substring(2));
 };
 
+const getIsMainBranch = async ({
+    oid,
+    dir,
+    mainBranchName,
+}: {
+    oid: string;
+    dir: string;
+    mainBranchName: string;
+}) => {
+    const execPromise = util.promisify(exec);
+    try {
+        await execPromise(
+            `git merge-base --is-ancestor ${oid} ${mainBranchName}`,
+            {
+                cwd: dir,
+            },
+        );
+    } catch (e) {
+        return false;
+    }
+    return true;
+};
+
 const extractGitTree = async (): Promise<TreeData | null> => {
     const dir = await getCwd();
 
@@ -113,7 +153,9 @@ const extractGitTree = async (): Promise<TreeData | null> => {
         return null;
     }
 
-    const remotes = await git.listRemotes({ fs, dir });
+    const git = simpleGit(dir);
+
+    const remotes = await isoGit.listRemotes({ fs, dir });
     if (remotes.length > 1) {
         // TODO: Expose error message better
         console.log('Too many remotes');
@@ -121,7 +163,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
     }
     const remote = remotes.length > 0 ? remotes[0] : null;
 
-    const branches = await git.listBranches({ fs, dir });
+    const branches = await isoGit.listBranches({ fs, dir });
 
     let mainBranchName: string | undefined;
     if (branches.includes('master')) {
@@ -147,13 +189,13 @@ const extractGitTree = async (): Promise<TreeData | null> => {
         return null;
     }
 
-    const currentBranch = await git.currentBranch({
+    const currentBranch = await isoGit.currentBranch({
         fs,
         dir,
         fullname: false,
     });
 
-    const activeCommit = await git.resolveRef({
+    const activeCommit = await isoGit.resolveRef({
         fs,
         dir,
         ref: 'HEAD',
@@ -164,7 +206,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
 
     // let rootCommit: TreeCommit | null = null;
 
-    const mainBranchOid = await git.resolveRef({
+    const mainBranchOid = await isoGit.resolveRef({
         fs,
         dir,
         ref: `refs/heads/${mainBranchName}`,
@@ -187,17 +229,20 @@ const extractGitTree = async (): Promise<TreeData | null> => {
         // const isMainBranch = 'branch' in ref && ref.branch === mainBranchName;
 
         // eslint-disable-next-line no-await-in-loop
+        const firstCommit = await git.firstCommit();
         const branchCommits = await git.log({
-            fs,
-            dir,
-            ref: 'branch' in ref ? ref.branch : ref.oid,
-            depth: MAX_BRANCH_DEPTH,
+            to: 'branch' in ref ? ref.branch : ref.oid,
+            from: firstCommit,
+            maxCount: MAX_BRANCH_DEPTH,
         });
+        const allCommits = branchCommits.all;
+
+        // console.log({ allCommits });
 
         let previousCommit = null;
-        for (let i = 0; i < branchCommits.length; i++) {
-            const rawCommit = branchCommits[i];
-            if (rawCommit.oid in commitMap) {
+        for (let i = 0; i < allCommits.length; i++) {
+            const rawCommit = allCommits[i];
+            if (rawCommit.hash in commitMap) {
                 // Link to the existing commit in the map and quit this branch
                 if (i === 0 && 'branch' in ref) {
                     const branch = await getBranch({
@@ -205,10 +250,10 @@ const extractGitTree = async (): Promise<TreeData | null> => {
                         remote,
                         branchName: ref.branch,
                     });
-                    commitMap[rawCommit.oid].metadata.branches.push(branch);
+                    commitMap[rawCommit.hash].metadata.branches.push(branch);
                 }
                 if (previousCommit) {
-                    commitMap[rawCommit.oid].branchSplits.push(previousCommit);
+                    commitMap[rawCommit.hash].branchSplits.push(previousCommit);
                 }
                 break;
             }
@@ -219,11 +264,19 @@ const extractGitTree = async (): Promise<TreeData | null> => {
                 ? await getBranch({ branchName, dir, remote })
                 : null;
 
-            const branchesForCommit = await getBranchesForCommit({
-                oid: rawCommit.oid,
+            // const branchesForCommit = await getBranchesForCommit({
+            //     oid: rawCommit.hash,
+            //     dir,
+            // });
+            // const alternative = parseRefs(rawCommit.refs);
+            // console.log({branchesForCommit, alternative})
+            // const isMainBranch = branchesForCommit.includes(mainBranchName);
+
+            const isMainBranch = await getIsMainBranch({
+                oid: rawCommit.hash,
                 dir,
+                mainBranchName,
             });
-            const isMainBranch = branchesForCommit.includes(mainBranchName);
 
             // Add new commit
             const commit: TreeCommit = {
@@ -247,7 +300,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
                 branchSplits: previousCommit ? [previousCommit] : [],
             };
 
-            if (rawCommit.oid === activeCommit) {
+            if (rawCommit.hash === activeCommit) {
                 // eslint-disable-next-line no-await-in-loop
                 const unmergedFiles = await getModifiedFiles(dir);
 
@@ -297,7 +350,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
                 }
             }
 
-            commitMap[rawCommit.oid] = commit;
+            commitMap[rawCommit.hash] = commit;
             previousCommit = commit;
             if (isMainBranch) {
                 // Add to main branch list and quit this branch
