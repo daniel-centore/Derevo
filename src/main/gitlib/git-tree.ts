@@ -145,6 +145,17 @@ const getIsMainBranch = async ({
     return true;
 };
 
+const getFirstCommit = async ({ dir }: { dir: string }) => {
+    const execPromise = util.promisify(exec);
+    const { stdout, stderr } = await execPromise(
+        'git rev-list --max-parents=0 HEAD',
+        {
+            cwd: dir,
+        },
+    );
+    return stdout.trim();
+};
+
 const extractGitTree = async (): Promise<TreeData | null> => {
     const dir = await getCwd();
 
@@ -228,8 +239,9 @@ const extractGitTree = async (): Promise<TreeData | null> => {
     for (const ref of refs) {
         // const isMainBranch = 'branch' in ref && ref.branch === mainBranchName;
 
+        // NOTE: git.firstCommit() seems to not always work
         // eslint-disable-next-line no-await-in-loop
-        const firstCommit = await git.firstCommit();
+        const firstCommit = await getFirstCommit({ dir });
         const branchCommits = await git.log({
             to: 'branch' in ref ? ref.branch : ref.oid,
             from: firstCommit,
