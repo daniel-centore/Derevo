@@ -17,8 +17,9 @@ import log from 'electron-log';
 import { unlink } from 'node:fs';
 import util from 'util';
 import { head } from 'lodash';
+import fs from 'fs';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './main-util';
+import { resolveHtmlPath, sleep } from './main-util';
 import { autoReloadGitTree, reloadGitTree } from './gitlib/git-tree';
 import { abortRebase, performRebase } from './gitlib/git-write';
 import { Command, TreeCommit } from '../types/types';
@@ -122,7 +123,15 @@ ipcMain.handle('run-cmds', async (_event, data) => {
     }
 
     for (const command of data as Command[]) {
-        const returnValue = await spawnTerminal({ command, dir, mainWindow });
+        while (fs.existsSync(`${dir}/.git/index.lock`)) {
+            console.log('Lock exists, waiting...');
+            await sleep(100);
+        }
+        const returnValue = await spawnTerminal({
+            command,
+            dir,
+            mainWindow,
+        });
         if (returnValue !== 0) {
             return returnValue;
         }
