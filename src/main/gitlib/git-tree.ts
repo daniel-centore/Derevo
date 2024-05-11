@@ -21,17 +21,17 @@ export const getLatestTree = () => latestTree;
 
 const rawCommitToMeta = ({
   rawCommit,
-  branch,
+  branches,
   activeCommit,
   mainBranch,
 }: {
   rawCommit: ReadCommitResult;
-  branch: Branch | null;
+  branches: Branch[];
   activeCommit: string;
   mainBranch: boolean;
 }): CommitMetadata => ({
   oid: rawCommit.oid,
-  branches: branch ? [branch] : [],
+  branches,
   title: `${rawCommit.commit.message.split('\n')[0]}`,
   active: rawCommit.oid === activeCommit,
   onMainBranch: mainBranch,
@@ -83,6 +83,20 @@ const getBranch = async ({
     branchName,
     hasChangesFromRemote,
   };
+};
+
+const getBranchesForCommit = async ({
+  oid,
+  dir,
+}: {
+  oid: string;
+  dir: string;
+}) => {
+  const execPromise = util.promisify(exec);
+  const { stdout, stderr } = await execPromise(`git branch --contains ${oid}`, {
+    cwd: dir,
+  });
+  return stdout.split('\n').map((x) => x.substring(2));
 };
 
 const extractGitTree = async (): Promise<TreeData | null> => {
@@ -142,18 +156,29 @@ const extractGitTree = async (): Promise<TreeData | null> => {
   const commitMap: Record<string, TreeCommit> = {};
   let dirty = false;
 
-  let rootCommit: TreeCommit | null = null;
+  // let rootCommit: TreeCommit | null = null;
 
-  // const branches = ['spr-8c8998', 'spr-cb27e1', 'spr-c543ff'];
-  const refs: ({ branch: string } | { oid: string })[] = [
-    { branch: mainBranchName },
+  const mainBranchOid = await git.resolveRef({
+    fs,
+    dir,
+    ref: `refs/heads/${mainBranchName}`,
+  });
+
+  const mainBranchCommits: TreeCommit[] = [];
+
+  const refs: (
+    | { branch: string }
+    | { oid: string; forceBranchName?: string }
+  )[] = [
+    // { branch: mainBranchName },
+    { oid: mainBranchOid, forceBranchName: mainBranchName },
     { oid: activeCommit },
     ...branches
       .filter((x) => x !== mainBranchName)
       .map((branch) => ({ branch })),
   ];
   for (const ref of refs) {
-    const isMainBranch = 'branch' in ref && ref.branch === mainBranchName;
+    // const isMainBranch = 'branch' in ref && ref.branch === mainBranchName;
 
     // eslint-disable-next-line no-await-in-loop
     const branchCommits = await git.log({
@@ -168,7 +193,11 @@ const extractGitTree = async (): Promise<TreeData | null> => {
       if (rawCommit.oid in commitMap) {
         // Link to the existing commit in the map and quit this branch
         if (i === 0 && 'branch' in ref) {
-          const branch = await getBranch({dir, remote, branchName: ref.branch});
+          const branch = await getBranch({
+            dir,
+            remote,
+            branchName: ref.branch,
+          });
           commitMap[rawCommit.oid].metadata.branches.push(branch);
         }
         if (previousCommit) {
@@ -179,14 +208,32 @@ const extractGitTree = async (): Promise<TreeData | null> => {
 
       const branchName = i === 0 && 'branch' in ref ? ref.branch : null;
 
-      const branch = branchName ? await getBranch({branchName, dir, remote}) : null;
+      const branch = branchName
+        ? await getBranch({ branchName, dir, remote })
+        : null;
+
+      const branchesForCommit = await getBranchesForCommit({
+        oid: rawCommit.oid,
+        dir,
+      });
+      const isMainBranch = branchesForCommit.includes(mainBranchName);
 
       // Add new commit
       const commit: TreeCommit = {
         type: 'commit',
         metadata: rawCommitToMeta({
           rawCommit,
-          branch,
+          branches: [
+            ...('forceBranchName' in ref && ref.forceBranchName
+              ? [
+                  {
+                    branchName: ref.forceBranchName,
+                    hasChangesFromRemote: null,
+                  },
+                ]
+              : []),
+            ...(branch ? [branch] : []),
+          ],
           activeCommit,
           mainBranch: isMainBranch,
         }),
@@ -246,15 +293,27 @@ const extractGitTree = async (): Promise<TreeData | null> => {
 
       commitMap[rawCommit.oid] = commit;
       previousCommit = commit;
-      if (isMainBranch && i === branchCommits.length - 1) {
-        rootCommit = commit;
+      if (isMainBranch) {
+        // Add to main branch list and quit this branch
+        mainBranchCommits.push(commit);
+        break;
       }
     }
   }
   const stashEntries = (await stashList({ dir })).length;
 
+  // Assemble the main branch in order
+  mainBranchCommits.sort(
+    (a, b) => a.metadata.authorTs.getTime() - b.metadata.authorTs.getTime(),
+  );
+  for (let i = 0; i < mainBranchCommits.length - 1; ++i) {
+    const commit = mainBranchCommits[i];
+    const nextCommit = mainBranchCommits[i + 1];
+    commit.branchSplits = [nextCommit, ...commit.branchSplits];
+  }
+
   return {
-    rootCommit,
+    rootCommit: mainBranchCommits[0],
     commitMap,
     dirty,
     stashEntries,
