@@ -15,6 +15,9 @@ import { getModifiedFiles, rebaseInProgress } from './git-read';
 import { rebaseStatus } from './activity-status';
 import { getCwd } from '../app-settings';
 
+// If you have a branch that's this large, that's your own fault
+const MAX_BRANCH_DEPTH = 100;
+
 let latestTree: TreeData | null;
 
 export const getLatestTree = () => latestTree;
@@ -185,6 +188,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
       fs,
       dir,
       ref: 'branch' in ref ? ref.branch : ref.oid,
+      depth: MAX_BRANCH_DEPTH,
     });
 
     let previousCommit = null;
