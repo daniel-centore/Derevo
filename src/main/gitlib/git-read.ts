@@ -25,6 +25,7 @@ export const getModifiedFiles = async (dir: string) => {
         ' M': { change: 'modified', staged: false },
         ' T': { change: 'modified', staged: false },
         ' D': { change: 'deleted', staged: false },
+        MM: { change: 'modified', staged: false },
         UU: { change: 'modified', staged: false },
         AA: { change: 'modified', staged: false },
         '??': { change: 'new', staged: false },
