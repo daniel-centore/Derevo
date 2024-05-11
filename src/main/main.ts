@@ -118,17 +118,19 @@ ipcMain.handle('run-cmds', async (_event, data) => {
   const dir = await getCwd();
 
   if (!mainWindow || !dir) {
-    return;
+    return -1;
   }
 
   for (const command of data as Command[]) {
     const returnValue = await spawnTerminal({ command, dir, mainWindow });
     if (returnValue !== 0) {
-      return;
+      return returnValue;
     }
 
     await reloadGitTree({ mainWindow });
   }
+
+  return 0;
 });
 
 ipcMain.handle('delete', async (_, files: string[]) => {

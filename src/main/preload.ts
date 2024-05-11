@@ -5,7 +5,7 @@ const electronHandler = {
   invoke: (channel: string, ...args: unknown[]) => {
     return ipcRenderer.invoke(channel, args);
   },
-  runCommands: (cmds: Command[]) => {
+  runCommands: (cmds: Command[]): Promise<number> => {
     return ipcRenderer.invoke('run-cmds', cmds);
   },
   rebase: (args: {

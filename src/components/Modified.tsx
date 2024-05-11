@@ -203,7 +203,7 @@ export const Modified = ({
             <Button
               disabled={checkedFiles.length === 0}
               onClick={async () => {
-                await window.electron.runCommands([
+                const returnValue = await window.electron.runCommands([
                   { cmd: 'git', args: ['reset'] },
                   { cmd: 'git', args: ['add', ...checkedFiles] },
                   // TODO: Rebase the rest of the stack
@@ -236,17 +236,23 @@ export const Modified = ({
                     : []),
                 ]);
 
-                const { result: rebaseResult } = await window.electron.rebase({
-                  from: entry.rootCommit,
-                  to: 'HEAD',
-                  skipFirstRebase: true,
-                });
+                // If the command run failed, don't do the rebase
+                if (returnValue === 0) {
+                  const { result: rebaseResult } = await window.electron.rebase(
+                    {
+                      from: entry.rootCommit,
+                      to: 'HEAD',
+                      skipFirstRebase: true,
+                    },
+                  );
 
-                if (rebaseResult === 'aborted') {
-                  // TODO: Eventually it would be great to be able to move the branches back to the original
-                  // commit and take the changes back into a modified state. This may take some work.
+                  if (rebaseResult === 'aborted') {
+                    // TODO: Eventually it would be great to be able to move the branches back to the original
+                    // commit and take the changes back into a modified state. This may take some work.
+                  }
                 }
 
+                // But either way we should still put the stash back
                 await window.electron.runCommands([
                   // Check out originally branch
                   ...(treeData.currentBranchName
