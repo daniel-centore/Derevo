@@ -163,7 +163,9 @@ export const reloadGithub = async ({
     const result = await getPrsForBranches(
       owner,
       repo,
-      branches.map((x) => x.branchName),
+      branches
+        .map((x) => x.branchName)
+        .filter((x) => x !== tree.mainBranchName),
     );
     mainWindow?.webContents.send('github-updated', result);
   } catch (e) {
