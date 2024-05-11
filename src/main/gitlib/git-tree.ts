@@ -264,7 +264,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
           const unmergedFilenames = unmergedFiles
             // These are files which changed as part of the rebase but didn't have conflicts
             // They should be excluded from the view
-            .filter((x) => x.status.includes('unstaged'))
+            .filter((x) => !x.staged)
             .map((x) => x.filename);
           const readFilePromise = util.promisify(fs.readFile);
           const conflictedFiles = [];
@@ -284,11 +284,7 @@ const extractGitTree = async (): Promise<TreeData | null> => {
         } else if (unmergedFiles.length > 0) {
           commit.branchSplits.push({
             type: 'modified',
-            dirtyFiles: unmergedFiles.filter((x) => !!x.status) as {
-              filename: string;
-              status: string;
-              change: ChangeType;
-            }[],
+            dirtyFiles: unmergedFiles,
             branches: commit.metadata.branches,
             rootCommit: commit,
           });
@@ -342,7 +338,6 @@ export const reloadGitTree = async ({
     // This happens in rare instances (usually race condition with filesystem)
     // Just ignore it and let the tree reload automatically
     console.error('Error reloading tree', e);
-    mainWindow?.webContents.send('git-tree-updated', null);
   }
 };
 

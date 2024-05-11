@@ -37,6 +37,7 @@ export type TreeModified = {
   dirtyFiles: {
     filename: string;
     change: ChangeType;
+    staged: boolean;
   }[];
   branches: Branch[];
 
