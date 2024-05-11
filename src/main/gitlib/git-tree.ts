@@ -25,6 +25,8 @@ import { getCwd } from '../app-settings';
 // If you have a branch that's this large, that's your own fault
 const MAX_BRANCH_DEPTH = 100;
 
+let warnedAboutMultipleRoots = false;
+
 let latestTree: TreeData | null;
 
 export const getLatestTree = () => latestTree;
@@ -231,7 +233,8 @@ const extractGitTree = async (): Promise<TreeData | null> => {
         // eslint-disable-next-line no-await-in-loop
         const firstCommitsRaw = await git.firstCommit();
         const firstCommits = firstCommitsRaw.trim().split('\n');
-        if (firstCommits.length > 1) {
+        if (firstCommits.length > 1 && !warnedAboutMultipleRoots) {
+            warnedAboutMultipleRoots = true;
             console.log('WARNING: You have multiple root commits');
         }
         const firstCommit = firstCommits[0];
