@@ -248,7 +248,6 @@ export const Modified = ({
                                             cmd: 'git',
                                             args: ['add', ...checkedFiles],
                                         },
-                                        // TODO: Rebase the rest of the stack
                                         {
                                             cmd: 'git',
                                             args: [
