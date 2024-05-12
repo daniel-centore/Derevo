@@ -194,6 +194,7 @@ export const Modified = ({
                                 const branchToCreate = branch
                                     ? branch
                                     : `derevo-${nanoid()}`;
+                                const currentBranchName = treeData.currentBranchName;
                                 const returnCode =
                                     await window.electron.runCommands([
                                         { cmd: 'git', args: ['reset'] },
@@ -227,11 +228,19 @@ export const Modified = ({
                                         {
                                             cmd: 'git',
                                             args: [
+                                                'checkout',
+                                                currentBranchName ?? 'head',
+                                            ],
+                                        },
+                                        {
+                                            cmd: 'git',
+                                            args: [
                                                 'branch',
                                                 '--delete',
                                                 branchToCreate,
                                             ],
                                         },
+                                        { cmd: 'git', args: ['reset'] },
                                     ]);
                                 }
                             }}
