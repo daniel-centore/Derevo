@@ -191,33 +191,49 @@ export const Modified = ({
                             variant="solid"
                             disabled={checkedFiles.length === 0}
                             onClick={async () => {
-                                window.electron.runCommands([
-                                    { cmd: 'git', args: ['reset'] },
-                                    {
-                                        cmd: 'git',
-                                        args: [
-                                            'checkout',
-                                            '-b',
-                                            branch
-                                                ? branch
-                                                : `derevo-${nanoid()}`,
-                                        ],
-                                    },
-                                    {
-                                        cmd: 'git',
-                                        args: ['add', ...checkedFiles],
-                                    },
-                                    {
-                                        cmd: 'git',
-                                        args: [
-                                            'commit',
-                                            '--allow-empty-message',
-                                            '-m',
-                                            message ?? '',
-                                            ...checkedFiles,
-                                        ],
-                                    },
-                                ]);
+                                const branchToCreate = branch
+                                    ? branch
+                                    : `derevo-${nanoid()}`;
+                                const returnCode =
+                                    await window.electron.runCommands([
+                                        { cmd: 'git', args: ['reset'] },
+                                        {
+                                            cmd: 'git',
+                                            args: [
+                                                'checkout',
+                                                '-b',
+                                                branchToCreate,
+                                            ],
+                                        },
+                                        {
+                                            cmd: 'git',
+                                            args: ['add', ...checkedFiles],
+                                        },
+                                        {
+                                            cmd: 'git',
+                                            args: [
+                                                'commit',
+                                                '--allow-empty-message',
+                                                '-m',
+                                                message ?? '',
+                                                ...checkedFiles,
+                                            ],
+                                        },
+                                    ]);
+
+                                if (returnCode !== 0) {
+                                    // Delete the branch if the commit failed
+                                    await window.electron.runCommands([
+                                        {
+                                            cmd: 'git',
+                                            args: [
+                                                'branch',
+                                                '--delete',
+                                                branchToCreate,
+                                            ],
+                                        },
+                                    ]);
+                                }
                             }}
                         >
                             Commit
