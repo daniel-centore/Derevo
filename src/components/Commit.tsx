@@ -38,6 +38,9 @@ const getPrColor = (
     if (status === 'open') {
         return 'success';
     }
+    if (status === 'draft') {
+        return 'warning';
+    }
     // Shouldn't happen
     return 'danger';
 };
@@ -442,6 +445,7 @@ export const Commit = (props: Props) => {
                             #{pr.prNumber}
                             {pr.status === 'closed' && ' (Closed)'}
                             {pr.status === 'merged' && ' (Merged)'}
+                            {pr.status === 'draft' && ' (Draft)'}
                             {pr.status === 'open' &&
                                 (prCommitBranch?.hasChangesFromRemote
                                     ? ' (Out of Sync)'

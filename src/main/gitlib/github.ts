@@ -104,7 +104,9 @@ export const getPrsForBranches = async (
                         ? x.merged_at
                             ? 'merged'
                             : 'closed'
-                        : 'open',
+                        : x.draft
+                          ? 'draft'
+                          : 'open',
                 prNumber: x.number,
             }));
             entry.sort((a, b) => a.prNumber - b.prNumber);

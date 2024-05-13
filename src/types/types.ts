@@ -61,7 +61,7 @@ export type TreeData = {
     } | null;
 };
 
-export type PrStatus = 'closed' | 'open' | 'merged';
+export type PrStatus = 'open' | 'draft' | 'closed' | 'merged';
 
 export type GithubPR = {
     branchName: string;
