@@ -123,25 +123,38 @@ ipcMain.handle('run-cmds', async (_event, data) => {
     }
 
     for (const command of data as Command[]) {
-        const result = await spawnTerminal({
-            command,
-            dir,
-            mainWindow,
-        });
-        if (result.returnCode !== 0) {
-            if (
-                result.out?.includes(
-                    'Another git process seems to be running in this repository',
-                )
-            ) {
-                console.log('Lock exists, retrying...');
-                // Retry if a lock causes the git process to fail
-                await sleep(300);
+        let retries = 5;
+        while (retries > 0) {
+            // eslint-disable-next-line no-await-in-loop
+            const result = await spawnTerminal({
+                command,
+                dir,
+                mainWindow,
+            });
+            console.log({ result });
+            if (result.returnCode === 0) {
+                break;
             } else {
-                return result.returnCode;
+                // eslint-disable-next-line no-lonely-if
+                if (
+                    result.out?.includes(
+                        'Another git process seems to be running in this repository',
+                    )
+                ) {
+                    retries--;
+                    console.log(
+                        `Lock exists, retrying... (${retries} remaining)`,
+                    );
+                    // Retry if a lock causes the git process to fail
+                    // eslint-disable-next-line no-await-in-loop
+                    await sleep(300);
+                } else {
+                    return result.returnCode;
+                }
             }
         }
 
+        // eslint-disable-next-line no-await-in-loop
         await reloadGitTree({ mainWindow });
     }
 
