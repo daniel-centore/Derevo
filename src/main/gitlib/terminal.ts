@@ -24,11 +24,11 @@ export const spawnTerminal = async ({
     command: Command;
     dir: string;
     mainWindow: BrowserWindow;
-}): Promise<number> => {
+}): Promise<{ out?: string; returnCode: number }> => {
     if (ptyProcess) {
         // TODO Lock instead
         console.log('Error: Process already running!');
-        return -1;
+        return { returnCode: -1 };
     }
 
     // const shPath = await shellPath();
@@ -37,6 +37,11 @@ export const spawnTerminal = async ({
         cols: 80,
         rows: 10,
         cwd: dir,
+        env: {
+            // Forces language to English
+            // Needed for automatic processing (e.g. to retry if lock exists)
+            LC_ALL: 'C',
+        },
         // TODO: Fix path
         // env: process.env,
     });
@@ -46,16 +51,23 @@ export const spawnTerminal = async ({
         `${cmd} ${args.map((arg) => escapeShellArg(arg)).join(' ')}\r\n`,
     );
 
+    const outObj = { out: '' };
+
     ptyProcess.onData((ptyData) => {
         mainWindow?.webContents.send('terminal-out', ptyData);
+        outObj.out += ptyData;
     });
 
     const ptyProcessFinal = ptyProcess;
-    return new Promise<number>((resolve) => {
+    return new Promise((resolve) => {
         ptyProcessFinal.onExit((x) => {
             mainWindow?.webContents.send('terminal-out', '\r\n> ');
             ptyProcess = null;
-            resolve(x.exitCode);
+            const result = {
+                returnCode: x.exitCode,
+                out: outObj.out,
+            };
+            resolve(result);
         });
     });
 };

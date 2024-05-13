@@ -119,7 +119,7 @@ const performRebaseHelper = async ({
 
     const fromBranch = tempBranchName;
 
-    const returnValue = await spawnTerminal({
+    const { returnCode } = await spawnTerminal({
         command: {
             cmd: 'git',
             args: ['rebase', '--onto', to, `${fromBranch}~`, fromBranch],
@@ -127,7 +127,7 @@ const performRebaseHelper = async ({
         dir,
         mainWindow,
     });
-    if (returnValue !== 0) {
+    if (returnCode !== 0) {
         let waitingForRebaseComplete = true;
         while (waitingForRebaseComplete) {
             if (!rebaseStatusInProgress()) {

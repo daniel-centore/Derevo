@@ -123,17 +123,23 @@ ipcMain.handle('run-cmds', async (_event, data) => {
     }
 
     for (const command of data as Command[]) {
-        while (fs.existsSync(`${dir}/.git/index.lock`)) {
-            console.log('Lock exists, waiting...');
-            await sleep(100);
-        }
-        const returnValue = await spawnTerminal({
+        const result = await spawnTerminal({
             command,
             dir,
             mainWindow,
         });
-        if (returnValue !== 0) {
-            return returnValue;
+        if (result.returnCode !== 0) {
+            if (
+                result.out?.includes(
+                    'Another git process seems to be running in this repository',
+                )
+            ) {
+                console.log('Lock exists, retrying...');
+                // Retry if a lock causes the git process to fail
+                await sleep(300);
+            } else {
+                return result.returnCode;
+            }
         }
 
         await reloadGitTree({ mainWindow });
