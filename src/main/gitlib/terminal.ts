@@ -38,6 +38,7 @@ export const spawnTerminal = async ({
         rows: 10,
         cwd: dir,
         env: {
+            ...process.env,
             // Forces language to English
             // Needed for automatic processing (e.g. to retry if lock exists)
             LC_ALL: 'C',
