@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import { isNil, omitBy, pickBy } from 'lodash';
 import * as pty from 'node-pty';
 import { Command } from '../../types/types';
+import { sleep } from '../main-util';
 
 let ptyProcess: pty.IPty | null = null;
 
@@ -16,7 +17,7 @@ export const escapeShellArg = (arg: string) => {
     return `'${arg.replace(/'/g, `'\\''`)}'`;
 };
 
-export const spawnTerminal = async ({
+const spawnTerminalHelper = async ({
     command: { cmd, args },
     dir,
     mainWindow,
@@ -71,6 +72,45 @@ export const spawnTerminal = async ({
             resolve(result);
         });
     });
+};
+
+export const spawnTerminal = async ({
+    command,
+    dir,
+    mainWindow,
+}: {
+    command: Command;
+    dir: string;
+    mainWindow: BrowserWindow;
+}): Promise<{ out?: string; returnCode: number }> => {
+    let retries = 3;
+    let result: { out?: string; returnCode: number } | null = null;
+    while (retries > 0) {
+        // eslint-disable-next-line no-await-in-loop
+        result = await spawnTerminalHelper({
+            command,
+            dir,
+            mainWindow,
+        });
+
+        if (result.returnCode === 0) {
+            return result;
+        }
+
+        await sleep(300);
+
+        if (
+            result.out?.includes(
+                'Another git process seems to be running in this repository',
+            )
+        ) {
+            console.log('Lock exists, retrying...');
+        } else {
+            console.log(`Error, retrying... (${retries} remaining`);
+            retries--;
+        }
+    }
+    return result ?? { returnCode: -1 };
 };
 
 export const terminalIn = (str: string) => {
