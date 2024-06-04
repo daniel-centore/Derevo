@@ -161,7 +161,7 @@ const getUnmergedButtons = ({
                                       ],
                                   },
                               ]),
-                        { cmd: 'git', args: ['reset', '--soft', 'HEAD~'] },
+                        { cmd: 'git', args: ['reset', 'HEAD~'] },
                     ]);
                 }}
             >
