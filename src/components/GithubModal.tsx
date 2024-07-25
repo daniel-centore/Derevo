@@ -62,6 +62,7 @@ export const GithubModal = ({
                     </Typography>
                     <Input
                         placeholder="Github Token"
+                        type="password"
                         value={token}
                         onChange={(e) => {
                             setToken(e.target.value);
