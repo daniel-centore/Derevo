@@ -1,6 +1,10 @@
 import { BrowserWindow } from 'electron';
 import { Octokit, RequestError } from 'octokit';
-import { createOAuthDeviceAuth } from '@octokit/auth-oauth-device';
+import {
+    createOAuthDeviceAuth,
+    GitHubAppAuthentication,
+    GitHubAppAuthenticationWithExpiration,
+} from '@octokit/auth-oauth-device';
 import { isNil } from 'lodash';
 import { refreshToken } from '@octokit/oauth-methods';
 import {
@@ -57,9 +61,19 @@ export const authGithub = async ({
         },
     });
 
-    const tokenAuthentication = await auth({
-        type: 'oauth',
-    });
+    let tokenAuthentication:
+        | GitHubAppAuthentication
+        | GitHubAppAuthenticationWithExpiration;
+    try {
+        tokenAuthentication = await auth({
+            type: 'oauth',
+        });
+    } catch (e) {
+        // Github verification expired
+        // TODO: Communicate in UI
+        console.log('Github verification expired');
+        return;
+    }
 
     await setGithubAuthentication(tokenAuthentication);
 
