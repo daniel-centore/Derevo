@@ -6,21 +6,28 @@ import {
     CssBaseline,
     CssVarsProvider,
     Sheet,
+    Snackbar,
     ThemeProvider,
     // createTheme,
     useColorScheme,
 } from '@mui/joy';
+import type { Verification } from '@octokit/auth-oauth-device/dist-types/types';
 import { Tree } from '../components/Tree';
 import './App.css';
 import { TerminalComponent } from '../components/TerminalComponent';
-import { GithubData, TreeData } from '../types/types';
+import { GithubData, GithubStatus, TreeData } from '../types/types';
 import { GithubModal } from '../components/GithubModal';
 
 const Main = () => {
+    const [toast, setToast] = useState<string>();
     const [treeData, setTreeData] = useState<TreeData | null>();
-    const [githubToken, setGithubToken] = useState('');
+    const [githubVerification, setGithubVerification] =
+        useState<Verification>();
     const [githubData, setGithubData] = useState<GithubData>({});
     const [githubModalOpen, setGithubModalOpen] = useState(false);
+    const [githubStatus, setGithubStatus] = useState<GithubStatus>({
+        status: 'unknown',
+    });
 
     useEffect(() => {
         const unsubscribe = window.electron.on('git-tree-updated', (result) => {
@@ -35,6 +42,31 @@ const Main = () => {
         });
         return () => unsubscribe();
     }, [setGithubData]);
+
+    useEffect(() => {
+        const unsubscribe = window.electron.on(
+            'github-verification-ready',
+            (result) => {
+                setGithubVerification(result as Verification);
+            },
+        );
+        return () => unsubscribe();
+    }, [setGithubVerification]);
+
+    useEffect(() => {
+        const unsubscribe = window.electron.on('github-auth-success', () => {
+            setGithubModalOpen(false);
+            setToast('Successfully authenticated with GitHub!');
+        });
+        return () => unsubscribe();
+    }, [setGithubModalOpen]);
+
+    useEffect(() => {
+        const unsubscribe = window.electron.on('github-status', (result) => {
+            setGithubStatus(result as GithubStatus);
+        });
+        return () => unsubscribe();
+    }, [setGithubStatus]);
 
     // useEffect(() => {
     //   // Load on start
@@ -85,11 +117,11 @@ const Main = () => {
                 flexDirection: 'column',
             }}
         >
-            {/* TODO: Default value */}
             <GithubModal
                 open={githubModalOpen}
                 setOpen={setGithubModalOpen}
-                defaultValue={githubToken}
+                verification={githubVerification}
+                githubStatus={githubStatus}
             />
             <div
                 style={{
@@ -169,13 +201,11 @@ const Main = () => {
           </Button> */}
                     <Button
                         onClick={async () => {
-                            setGithubToken(
-                                await window.electron.getGithubToken(),
-                            );
+                            setGithubVerification(undefined);
                             setGithubModalOpen(true);
                         }}
                     >
-                        Github Token
+                        Github
                     </Button>
                     {openRepoButton}
                 </ButtonGroup>
@@ -194,6 +224,15 @@ const Main = () => {
             >
                 <TerminalComponent />
             </div>
+            <Snackbar
+                open={!!toast}
+                autoHideDuration={5000}
+                onClose={() => {
+                    setToast(undefined);
+                }}
+            >
+                {toast}
+            </Snackbar>
         </div>
     );
 };

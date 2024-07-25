@@ -29,8 +29,8 @@ import {
     spawnTerminal,
     terminalIn,
 } from './gitlib/terminal';
-import { getCwd, getGithubToken, setCwd, setGithubToken } from './app-settings';
-import { autoReloadGithub, reloadGithub } from './gitlib/github';
+import { getCwd, setCwd, setGithubAuthentication } from './app-settings';
+import { authGithub, autoReloadGithub, reloadGithub } from './gitlib/github';
 
 class AppUpdater {
     constructor() {
@@ -41,13 +41,6 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
-
-// ipcMain.handle('get-prs', async (_, data) => {
-//   if (!mainWindow) {
-//     return;
-//   }
-
-// });
 
 ipcMain.handle('get-folder', async () => {
     if (!mainWindow) {
@@ -70,18 +63,11 @@ ipcMain.handle('set-cwd', async (_, data) => {
     await reloadGitTree({ mainWindow });
 });
 
-ipcMain.handle('get-github-token', async () => {
-    if (!mainWindow) {
-        return '';
-    }
-    return getGithubToken();
-});
-
-ipcMain.handle('set-github-token', async (_, data) => {
+ipcMain.handle('auth-github', async () => {
     if (!mainWindow) {
         return;
     }
-    await setGithubToken(data);
+    await authGithub({ mainWindow });
 });
 
 ipcMain.handle('reload-github', async (_, data) => {
@@ -89,6 +75,13 @@ ipcMain.handle('reload-github', async (_, data) => {
         return;
     }
     await reloadGithub({ mainWindow });
+});
+
+ipcMain.handle('logout-github', async () => {
+    if (!mainWindow) {
+        return;
+    }
+    await setGithubAuthentication(null);
 });
 
 ipcMain.handle('extract-git-tree', async () => {
