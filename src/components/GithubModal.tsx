@@ -32,8 +32,8 @@ export const GithubModal = ({
                 <div>
                     <Typography level="h2">GitHub Token</Typography>
                     <Typography style={{ paddingTop: '10px' }}>
-                        Create a classic personal access token with the repo
-                        scope:
+                        Create a classic Personal Access Token (PAT) with the
+                        repo scope:
                     </Typography>
                     <Button
                         variant="plain"
@@ -43,6 +43,20 @@ export const GithubModal = ({
                     >
                         {NEW_TOKEN_URL}
                     </Button>
+                    <Typography style={{ paddingTop: '10px' }}>
+                        Alternatively, you can use the Github CLI (this method
+                        might work if your organization has PATs disabled):
+                    </Typography>
+                    <Typography
+                        fontFamily="monospace"
+                        style={{ paddingTop: '10px', paddingLeft: '20px' }}
+                    >
+                        brew install gh
+                        <br />
+                        gh auth login
+                        <br />
+                        gh auth token
+                    </Typography>
                     <Typography style={{ paddingTop: '10px' }}>
                         Paste the token here:
                     </Typography>
