@@ -81,17 +81,3 @@ export type Point = {
 };
 
 export type RebaseResult = { result: 'success' | 'aborted' };
-
-export type GithubStatus =
-    | {
-          status: 'authenticated';
-      }
-    | {
-          status: 'logged-out';
-      }
-    | {
-          status: 'auth-bad';
-      }
-    | {
-          status: 'unknown';
-      };

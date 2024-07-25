@@ -1,25 +1,8 @@
 import { BrowserWindow } from 'electron';
-import { Octokit, RequestError } from 'octokit';
-import {
-    createOAuthDeviceAuth,
-    GitHubAppAuthentication,
-    GitHubAppAuthenticationWithExpiration,
-} from '@octokit/auth-oauth-device';
-import { isNil } from 'lodash';
-import { refreshToken } from '@octokit/oauth-methods';
-import {
-    GithubData,
-    GithubPR,
-    GithubStatus,
-    TreeCommit,
-    TreeData,
-} from '../../types/types';
+import { Octokit, App, RequestError } from 'octokit';
+import { GithubData, GithubPR, TreeCommit, TreeData } from '../../types/types';
 import { getLatestTree } from './git-tree';
-import {
-    getGithubAuthentication,
-    setGithubAuthentication,
-} from '../app-settings';
-import { sleep } from '../main-util';
+import { getGithubToken } from '../app-settings';
 
 type PrData = Awaited<
     ReturnType<Octokit['rest']['repos']['listPullRequestsAssociatedWithCommit']>
@@ -31,87 +14,6 @@ type PrsData = {
 
 const prCache: Record<string, PrsData> = {};
 
-const CLIENT_ID = 'Iv23liB0k31dxsOxfwNC';
-
-// const { createOAuthDeviceAuth } = require('esm')('@octokit/auth-oauth-device');
-
-const setGithubStatus = ({
-    mainWindow,
-    status,
-}: {
-    mainWindow: BrowserWindow | undefined;
-    status: GithubStatus;
-}) => {
-    mainWindow?.webContents.send('github-status', status);
-};
-
-export const authGithub = async ({
-    mainWindow,
-}: {
-    mainWindow: BrowserWindow | undefined;
-}) => {
-    const auth = createOAuthDeviceAuth({
-        clientType: 'github-app',
-        clientId: CLIENT_ID,
-        onVerification(verification) {
-            mainWindow?.webContents.send(
-                'github-verification-ready',
-                verification,
-            );
-        },
-    });
-
-    let tokenAuthentication:
-        | GitHubAppAuthentication
-        | GitHubAppAuthenticationWithExpiration;
-    try {
-        tokenAuthentication = await auth({
-            type: 'oauth',
-        });
-    } catch (e) {
-        // Github verification expired
-        // TODO: Communicate in UI
-        console.log('Github verification expired');
-        return;
-    }
-
-    await setGithubAuthentication(tokenAuthentication);
-
-    mainWindow?.webContents.send('github-auth-success');
-};
-
-const getAuthenticationToken = async ({
-    mainWindow,
-}: {
-    mainWindow: BrowserWindow | undefined;
-}): Promise<string | null> => {
-    const auth = await getGithubAuthentication();
-    if (isNil(auth)) {
-        setGithubStatus({ mainWindow, status: { status: 'logged-out' } });
-        return null;
-    }
-    if (new Date(auth.refreshTokenExpiresAt) < new Date()) {
-        // If the refresh token is expired, user needs to reauth
-        setGithubStatus({ mainWindow, status: { status: 'logged-out' } });
-        return null;
-    }
-    if (new Date(auth.expiresAt) < new Date()) {
-        console.log('Refreshing...');
-        const { authentication: refreshedAuth } = await refreshToken({
-            clientType: 'github-app',
-            clientId: CLIENT_ID,
-            clientSecret: undefined as any, // this is not needed for device flow
-            refreshToken: auth.refreshToken,
-        });
-        setGithubAuthentication(refreshedAuth);
-        console.log('Refreshed!');
-        setGithubStatus({ mainWindow, status: { status: 'authenticated' } });
-        return refreshedAuth.token;
-    }
-    setGithubStatus({ mainWindow, status: { status: 'authenticated' } });
-    return auth.token;
-};
-
 // TODO: Auth
 // TODO: Throttling https://github.com/octokit/plugin-throttling.js?tab=readme-ov-file
 // https://github.com/settings/tokens/new?scopes=repo
@@ -119,16 +21,14 @@ const getAuthenticationToken = async ({
 let reloadInProgress = false;
 
 const getPrsForBranch = async (
-    mainWindow: BrowserWindow,
     owner: string,
     repo: string,
     branch: string,
 ): Promise<PrsData | null> => {
-    const token = await getAuthenticationToken({ mainWindow });
+    const token = await getGithubToken();
     if (!token) {
         return null;
     }
-
     const octokit = new Octokit({ auth: token });
     const oldValue = branch in prCache ? prCache[branch] : null;
 
@@ -172,16 +72,6 @@ const getPrsForBranch = async (
             return oldValue;
         }
 
-        // 404 - Not Found
-        // This is also used when we don't have permission
-        if (status === 404) {
-            console.log('404 - Not found (or permission not granted)');
-            setGithubStatus({ mainWindow, status: { status: 'auth-bad' } });
-            // Prevents us from killing our rate limit
-            await sleep(10000);
-            return null;
-        }
-
         console.log('Error', e);
         return null;
     }
@@ -197,7 +87,6 @@ const getPrsForBranch = async (
 };
 
 export const getPrsForBranches = async (
-    mainWindow: BrowserWindow,
     owner: string,
     repo: string,
     branches: string[],
@@ -205,7 +94,7 @@ export const getPrsForBranches = async (
     const results: GithubData = {};
     for (const branch of branches) {
         // eslint-disable-next-line no-await-in-loop
-        const result = await getPrsForBranch(mainWindow, owner, repo, branch);
+        const result = await getPrsForBranch(owner, repo, branch);
         if (result) {
             const entry: GithubPR[] = result.prData.data.map((x) => ({
                 branchName: branch,
@@ -257,9 +146,6 @@ export const reloadGithub = async ({
 }: {
     mainWindow: BrowserWindow | undefined;
 }) => {
-    if (!mainWindow) {
-        return;
-    }
     if (reloadInProgress) {
         console.log('Reload already in progress');
         return;
@@ -281,7 +167,6 @@ export const reloadGithub = async ({
     const branches = getBranchesFromTree(tree);
     try {
         const result = await getPrsForBranches(
-            mainWindow,
             owner,
             repo,
             branches
