@@ -149,6 +149,7 @@ const getIsMainBranch = async ({
 
 const extractGitTree = async (): Promise<TreeData | null> => {
     const dir = await getCwd();
+    const existsPromise = util.promisify(fs.exists);
 
     if (!dir) {
         // No directory has been selected yet
@@ -334,6 +335,12 @@ const extractGitTree = async (): Promise<TreeData | null> => {
                     const readFilePromise = util.promisify(fs.readFile);
                     const conflictedFiles = [];
                     for (const file of unmergedFilenames) {
+                        const fileExists = await existsPromise(`${dir}/${file}`);
+                        if (!fileExists) {
+                            // This can happen if a file is delete by the engineer in order to
+                            // resolve the conflict – we should consider this resolved.
+                            continue;
+                        }
                         const contents = await readFilePromise(
                             `${dir}/${file}`,
                             'utf-8',
