@@ -7,6 +7,7 @@ import {
     PrStatus,
     TreeCommit,
     TreeData,
+    TreeEntry,
 } from '../types/types';
 import { EntryWrapper } from './EntryWrapper';
 import { HasMenu } from './HasMenu';
@@ -196,7 +197,7 @@ const getUnmergedButtons = ({
     const activeBranch = commit.metadata.branches.find(
         (x) => x.branchName === treeData.currentBranchName,
     );
-    if (
+    const isPushable =
         treeData.rebaseStatus === 'stopped' &&
         !treeData.dirty &&
         meta.active &&
@@ -204,11 +205,11 @@ const getUnmergedButtons = ({
         !rebase &&
         remote &&
         treeData.currentBranchName &&
-        activeBranch?.hasChangesFromRemote !== false
-    ) {
+        activeBranch?.hasChangesFromRemote !== false;
+    if (isPushable) {
         buttons.push(
             <Button
-                key="stash-pop"
+                key="push"
                 onClick={() => {
                     window.electron.runCommands([
                         {
@@ -226,6 +227,40 @@ const getUnmergedButtons = ({
                 variant="solid"
             >
                 Push
+            </Button>,
+        );
+    }
+    if (isPushable && commit.branchSplits.length > 0) {
+        buttons.push(
+            <Button
+                key="push-stack"
+                onClick={async () => {
+                    const recursivePush = async (entry: TreeEntry) => {
+                        if (entry.type === 'commit') {
+                            for (const branch of entry.metadata.branches) {
+                                await window.electron.runCommands([
+                                    {
+                                        cmd: 'git',
+                                        args: [
+                                            'push',
+                                            remote.remote,
+                                            branch.branchName,
+                                            '--force-with-lease',
+                                        ],
+                                    },
+                                ]);
+                            }
+                            for (const branchSplit of entry.branchSplits) {
+                                await recursivePush(branchSplit);
+                            }
+                        }
+                    };
+                    await recursivePush(commit);
+                }}
+                color="warning"
+                variant="solid"
+            >
+                Push Stack
             </Button>,
         );
     }
